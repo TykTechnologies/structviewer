@@ -12,7 +12,7 @@ func (h *Viewer) ParseEnvs() []string {
 	var envs []string
 	envVars := h.envs
 
-	if len(envs) == 0 {
+	if len(envVars) == 0 {
 		envVars = parseEnvs(h.config)
 	}
 
