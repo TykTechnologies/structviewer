@@ -7,6 +7,7 @@ import (
 	"github.com/fatih/structs"
 )
 
+//ParseEnvs parse Viewer config field, generating a string slice of prefix+key:value of each config field
 func (h *Viewer) ParseEnvs() []string {
 	var envs []string
 	envVars := h.envs
@@ -51,11 +52,13 @@ func parseEnvs(config interface{}) []EnvVars {
 	return envs
 }
 
+//EnvVars is a key:value string struct for environment variables representation
 type EnvVars struct {
 	Key   string
 	Value string
 }
 
+//String returns a key:value string from EnvVars
 func (ev EnvVars) String() string {
 	return ev.Key + ":" + ev.Value
 }

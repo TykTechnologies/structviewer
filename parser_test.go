@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type TestStruct struct {
+type testStruct struct {
 	Exported    string
 	notExported bool
 
@@ -83,7 +83,7 @@ func TestParseEnvsValues(t *testing.T) {
 }
 
 func TestParseEnvsLen(t *testing.T) {
-	testStruct := TestStruct{
+	testStruct := testStruct{
 		Exported:    "val1",
 		notExported: true,
 
@@ -104,7 +104,7 @@ func TestParseEnvsLen(t *testing.T) {
 }
 
 func TestParseEnvsPrefix(t *testing.T) {
-	testStruct := TestStruct{
+	testStruct := testStruct{
 		Exported:    "val1",
 		notExported: true,
 
