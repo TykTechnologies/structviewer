@@ -10,10 +10,13 @@ import (
 func (h *Viewer) ParseEnvs() []string {
 	var envs []string
 	envVars := h.envs
+
 	if len(envs) == 0 {
 		envVars = parseEnvs(h.config)
 	}
-	for _, env := range envVars {
+
+	for i := range envVars {
+		env := envVars[i]
 		envs = append(envs, h.prefix+env.String())
 	}
 
@@ -44,6 +47,7 @@ func parseEnvs(config interface{}) []EnvVars {
 			}
 		}
 	}
+
 	return envs
 }
 
@@ -59,12 +63,13 @@ func (ev EnvVars) String() string {
 func (ev *EnvVars) setKey(field *structs.Field) {
 	key := field.Name()
 	jsonTag := field.Tag("json")
+
 	if jsonTag != "" && jsonTag != "-" {
-		jsonTag = strings.Replace(jsonTag, ",omitempty", "", -1)
+		jsonTag = strings.ReplaceAll(jsonTag, ",omitempty", "")
 		key = jsonTag
 	}
 
-	key = strings.Replace(key, "_", "", -1)
+	key = strings.ReplaceAll(key, "_", "")
 	key = strings.ToUpper(key)
 	ev.Key = key
 }

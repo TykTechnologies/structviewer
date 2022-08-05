@@ -10,10 +10,10 @@ type Viewer struct {
 func New(config interface{}, prefix string) *Viewer {
 	cfg := Viewer{config: config, prefix: prefix}
 	cfg.Start()
+
 	return &cfg
 }
 
 func (h *Viewer) Start() {
 	h.envs = parseEnvs(h.config)
 }
-

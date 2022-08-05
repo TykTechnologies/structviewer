@@ -23,7 +23,6 @@ type TestStruct struct {
 }
 
 func TestParseEnvsValues(t *testing.T) {
-
 	tcs := []struct {
 		testName     string
 		testStruct   interface{}
@@ -81,11 +80,10 @@ func TestParseEnvsValues(t *testing.T) {
 			assert.EqualValues(t, tc.expectedEnvs, envs)
 		})
 	}
-
 }
 
 func TestParseEnvsLen(t *testing.T) {
-	var testStruct = TestStruct{
+	testStruct := TestStruct{
 		Exported:    "val1",
 		notExported: true,
 
@@ -106,7 +104,7 @@ func TestParseEnvsLen(t *testing.T) {
 }
 
 func TestParseEnvsPrefix(t *testing.T) {
-	var testStruct = TestStruct{
+	testStruct := TestStruct{
 		Exported:    "val1",
 		notExported: true,
 
@@ -129,4 +127,3 @@ func TestParseEnvsPrefix(t *testing.T) {
 		assert.True(t, strings.HasPrefix(env, prefix))
 	}
 }
-
