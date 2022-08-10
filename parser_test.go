@@ -73,7 +73,8 @@ func TestParseEnvsValues(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.testName, func(t *testing.T) {
-			helper := New(tc.testStruct, "")
+			structViewerConfig := Config{Object: tc.testStruct}
+			helper := New(&structViewerConfig, "")
 			envs := helper.ParseEnvs()
 
 			assert.Len(t, envs, tc.expectedLen)
@@ -96,7 +97,9 @@ func TestParseEnvsLen(t *testing.T) {
 		}{Test: "test"},
 		JsonExported: 5,
 	}
-	helper := New(testStruct, "TYK_")
+
+	structViewerConfig := Config{Object: testStruct}
+	helper := New(&structViewerConfig, "TYK_")
 
 	envs := helper.ParseEnvs()
 
@@ -119,11 +122,24 @@ func TestParseEnvsPrefix(t *testing.T) {
 	}
 
 	prefix := "TYK_TEST_"
-	helper := New(testStruct, prefix)
+	structViewerConfig := Config{Object: testStruct}
+	helper := New(&structViewerConfig, prefix)
 
 	envs := helper.ParseEnvs()
 
 	for _, env := range envs {
 		assert.True(t, strings.HasPrefix(env, prefix))
+	}
+}
+
+func TestParseComments(t *testing.T) {
+	prefix := "TYK_TEST_"
+	structViewerConfig := Config{Object: ExampleConfig{}}
+	helper := New(&structViewerConfig, prefix)
+	err := helper.parseComments()
+	assert.NoError(t, err, "failed to parse comments")
+
+	for _, env := range helper.Envs() {
+		assert.NotEmpty(t, env.Desc, env.Key)
 	}
 }
