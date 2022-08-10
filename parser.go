@@ -57,7 +57,6 @@ func (v *Viewer) parseComments() error {
 			if envVar := v.get(confField.Name); envVar != nil {
 				envVar.Desc = strings.TrimSpace(doc)
 			}
-
 		}
 
 		return false

@@ -30,5 +30,7 @@ func main() {
 		log.Fatalf("failed to parse comments, err: %v", err)
 	}
 
-	json.NewEncoder(os.Stdout).Encode(viewer.Envs())
+	if err := json.NewEncoder(os.Stdout).Encode(viewer.Envs()); err != nil {
+		log.Fatalf("failed to encode environments, err: %v", err)
+	}
 }

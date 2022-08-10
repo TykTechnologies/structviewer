@@ -13,9 +13,6 @@ type KV struct {
 }
 
 type Obj struct {
-	// unexported field for Obj.
-	unexported string
-
 	// Temp value for Obj.
 	Temp   int64        `json:"temp"`
 	Buffer bytes.Buffer `json:"buffer"`
