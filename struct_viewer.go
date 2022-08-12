@@ -1,6 +1,7 @@
 package struct_viewer
 
 import (
+	"errors"
 	"go/ast"
 )
 
@@ -14,6 +15,11 @@ type Viewer struct {
 	file *ast.File
 }
 
+var (
+	ErrNilConfig   = errors.New("invalid Config structure provided")
+	ErrEmptyStruct = errors.New("empty Struct in configuration")
+)
+
 // Config represents configuration structure.
 type Config struct {
 	// Object represents an object that is going to be parsed.
@@ -25,7 +31,15 @@ type Config struct {
 }
 
 // New receives a configuration structure and a prefix and returns a Viewer struct to manipulate this library.
-func New(config *Config, prefix string) *Viewer {
+func New(config *Config, prefix string) (*Viewer, error) {
+	if config == nil {
+		return nil, ErrNilConfig
+	}
+
+	if config.Object == nil {
+		return nil, ErrEmptyStruct
+	}
+
 	if config.Path == "" {
 		config.Path = "./config.go"
 	}
@@ -33,7 +47,7 @@ func New(config *Config, prefix string) *Viewer {
 	cfg := Viewer{config: config.Object, prefix: prefix, confFilePath: config.Path}
 	cfg.Start()
 
-	return &cfg
+	return &cfg, nil
 }
 
 // Start starts the Viewer control struct, parsing the environment variables
