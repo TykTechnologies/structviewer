@@ -4,7 +4,7 @@ import (
 	"go/ast"
 )
 
-// Viewer is the pkg control structure where the configuration, prefix and env vars are stored.
+// Viewer is the pkg control structure where the prefix and env vars are stored.
 type Viewer struct {
 	config       interface{}
 	prefix       string
@@ -14,9 +14,14 @@ type Viewer struct {
 	file *ast.File
 }
 
+// Config represents configuration structure.
 type Config struct {
+	// Object represents an object that is going to be parsed.
 	Object interface{}
-	Path   string
+
+	// Path is the file path of the Object. Needed for comment parser.
+	// Default value is "./config.go".
+	Path string
 }
 
 // New receives a configuration structure and a prefix and returns a Viewer struct to manipulate this library.

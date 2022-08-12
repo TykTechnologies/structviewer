@@ -51,19 +51,28 @@ func (v *Viewer) parseComments() error {
 			return true
 		}
 
-		for _, structField := range structType.Fields.List {
-			doc := structField.Doc.Text()
-
-			confField := structField.Names[0]
-			if envVar := v.get(confField.Name); envVar != nil {
-				envVar.Desc = strings.TrimSpace(doc)
-			}
-		}
+		v.parseInnerFields(structType)
 
 		return false
 	})
 
 	return nil
+}
+
+func (v *Viewer) parseInnerFields(s *ast.StructType) {
+	for _, structField := range s.Fields.List {
+		comment := structField.Doc.Text()
+		confField := structField.Names[0]
+
+		envVar := v.get(confField.Name)
+		if comment != "" && envVar != nil {
+			envVar.Desc = strings.TrimSpace(comment)
+		}
+
+		if structType, ok := structField.Type.(*ast.StructType); ok {
+			v.parseInnerFields(structType)
+		}
+	}
 }
 
 func (v *Viewer) get(field string) *EnvVar {
@@ -133,5 +142,10 @@ func (ev *EnvVar) setKey(field *structs.Field) {
 }
 
 func (ev *EnvVar) setValue(field *structs.Field) {
+	if structs.IsStruct(field.Value()) {
+		ev.Value = fmt.Sprintf("%+v", field.Value())
+		return
+	}
+
 	ev.Value = fmt.Sprint(field.Value())
 }

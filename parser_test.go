@@ -8,17 +8,23 @@ import (
 )
 
 type testStruct struct {
+	// Exported represents a sample exported field.
 	Exported    string
 	notExported bool
 
+	// StrField is a struct field.
 	StrField struct {
-		Test  string
+		// Test is a field of struct type.
+		Test string
+		// Other is another struct type.
 		Other struct {
+			// OtherTest represents a field of sub-struct.
 			OtherTest  bool
 			nonEmbeded string
 		}
 	}
 
+	// JsonExported includes a JSON tag.
 	JsonExported int `json:"name"`
 }
 
@@ -133,13 +139,11 @@ func TestParseEnvsPrefix(t *testing.T) {
 }
 
 func TestParseComments(t *testing.T) {
-	prefix := "TYK_TEST_"
-	structViewerConfig := Config{Object: ExampleConfig{}}
-	helper := New(&structViewerConfig, prefix)
-	err := helper.parseComments()
+	viewer := New(&Config{Object: testStruct{}, Path: "./parser_test.go"}, "TYK_")
+	err := viewer.parseComments()
 	assert.NoError(t, err, "failed to parse comments")
 
-	for _, env := range helper.Envs() {
-		assert.NotEmpty(t, env.Desc, env.Key)
+	for _, env := range viewer.Envs() {
+		assert.NotEmpty(t, env.Desc, "failed to parse %v comments", env.Field)
 	}
 }
