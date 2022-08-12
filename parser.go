@@ -27,6 +27,7 @@ func (v *Viewer) ParseEnvs() []string {
 	return envs
 }
 
+// Envs returns environment variables parsed by struct-viewer.
 func (v *Viewer) Envs() []*EnvVar {
 	return v.envs
 }
