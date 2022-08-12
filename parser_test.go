@@ -52,7 +52,6 @@ func TestViewerNew(t *testing.T) {
 			assert.ErrorIs(t, err, tc.expectedErr)
 		})
 	}
-
 }
 
 func TestParseEnvsValues(t *testing.T) {
