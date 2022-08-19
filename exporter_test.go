@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestJSONHandler(t *testing.T){
-	tcs := []struct{
+func TestJSONHandler(t *testing.T) {
+	tcs := []struct {
 		testName string
 
 		givenConfig interface{}
@@ -23,7 +23,7 @@ func TestJSONHandler(t *testing.T){
 			givenConfig: struct {
 				Name string `json:"field_name"`
 			}{
-			"field_value",
+				"field_value",
 			},
 			expectedStatusCode: http.StatusOK,
 			expectedJSONOutput: fmt.Sprintln(`{"field_name":"field_value"}`),
@@ -32,19 +32,19 @@ func TestJSONHandler(t *testing.T){
 			testName: "complex struct struct",
 			givenConfig: struct {
 				Name string `json:"name,omitempty"`
-				Data struct{
-					Object1 int `json:"object_1,omitempty"`
+				Data struct {
+					Object1 int  `json:"object_1,omitempty"`
 					Object2 bool `json:"object_2,omitempty"`
-				}`json:"data"`
-				Metadata map[string]struct{
-					ID int `json:"id,omitempty"`
+				} `json:"data"`
+				Metadata map[string]struct {
+					ID    int    `json:"id,omitempty"`
 					Value string `json:"value,omitempty"`
 				} `json:"metadata,omitempty"`
 				OmittedValue string `json:"omitted_value,omitempty"`
 			}{
 				Name: "name_value",
 				Data: struct {
-					Object1 int `json:"object_1,omitempty"`
+					Object1 int  `json:"object_1,omitempty"`
 					Object2 bool `json:"object_2,omitempty"`
 				}{
 					Object1: 1,
@@ -54,7 +54,7 @@ func TestJSONHandler(t *testing.T){
 					ID    int    `json:"id,omitempty"`
 					Value string `json:"value,omitempty"`
 				}{
-					"key_99":{ID:99,Value: "key99"},
+					"key_99": {ID: 99, Value: "key99"},
 				},
 			},
 			expectedStatusCode: http.StatusOK,
@@ -62,7 +62,7 @@ func TestJSONHandler(t *testing.T){
 		},
 	}
 
-	for _, tc := range tcs{
+	for _, tc := range tcs {
 		t.Run(tc.testName, func(t *testing.T) {
 			// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
 			// pass 'nil' as the third parameter.
@@ -93,12 +93,12 @@ func TestJSONHandler(t *testing.T){
 
 }
 
-func TestEnvsHandler(t *testing.T){
-	tcs := []struct{
+func TestEnvsHandler(t *testing.T) {
+	tcs := []struct {
 		testName string
 
-		givenConfig interface{}
-		givenPrefix string
+		givenConfig        interface{}
+		givenPrefix        string
 		expectedStatusCode int
 		expectedJSONOutput string
 	}{
@@ -119,7 +119,7 @@ func TestEnvsHandler(t *testing.T){
 			}{
 				"field_value",
 			},
-			givenPrefix: "TEST_",
+			givenPrefix:        "TEST_",
 			expectedStatusCode: http.StatusOK,
 			expectedJSONOutput: fmt.Sprintln(`["TEST_FIELDNAME:field_value"]`),
 		},
@@ -127,19 +127,19 @@ func TestEnvsHandler(t *testing.T){
 			testName: "complex struct struct",
 			givenConfig: struct {
 				Name string `json:"name,omitempty"`
-				Data struct{
-					Object1 int `json:"object_1,omitempty"`
+				Data struct {
+					Object1 int  `json:"object_1,omitempty"`
 					Object2 bool `json:"object_2,omitempty"`
-				}`json:"data"`
-				Metadata map[string]struct{
-					ID int `json:"id,omitempty"`
+				} `json:"data"`
+				Metadata map[string]struct {
+					ID    int    `json:"id,omitempty"`
 					Value string `json:"value,omitempty"`
 				} `json:"metadata,omitempty"`
 				OmittedValue string `json:"omitted_value,omitempty"`
 			}{
 				Name: "name_value",
 				Data: struct {
-					Object1 int `json:"object_1,omitempty"`
+					Object1 int  `json:"object_1,omitempty"`
 					Object2 bool `json:"object_2,omitempty"`
 				}{
 					Object1: 1,
@@ -149,7 +149,7 @@ func TestEnvsHandler(t *testing.T){
 					ID    int    `json:"id,omitempty"`
 					Value string `json:"value,omitempty"`
 				}{
-					"key_99":{ID:99,Value: "key99"},
+					"key_99": {ID: 99, Value: "key99"},
 				},
 			},
 			expectedStatusCode: http.StatusOK,
@@ -157,7 +157,7 @@ func TestEnvsHandler(t *testing.T){
 		},
 	}
 
-	for _, tc := range tcs{
+	for _, tc := range tcs {
 		t.Run(tc.testName, func(t *testing.T) {
 			// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
 			// pass 'nil' as the third parameter.
