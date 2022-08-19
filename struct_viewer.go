@@ -1,22 +1,60 @@
 package struct_viewer
 
-// Viewer is the pkg control structure where the configuration, prefix and env vars are stored.
-type Viewer struct {
-	config interface{}
-	prefix string
+import (
+	"errors"
+	"go/ast"
+)
 
-	envs []EnvVars
+// Viewer is the pkg control structure where the prefix and env vars are stored.
+type Viewer struct {
+	config       interface{}
+	prefix       string
+	confFilePath string
+
+	envs []*EnvVar
+	file *ast.File
+}
+
+var (
+	ErrNilConfig   = errors.New("invalid Config structure provided")
+	ErrEmptyStruct = errors.New("empty Struct in configuration")
+)
+
+// Config represents configuration structure.
+type Config struct {
+	// Object represents an object that is going to be parsed.
+	Object interface{}
+
+	// Path is the file path of the Object. Needed for comment parser.
+	// Default value is "./config.go".
+	Path string
 }
 
 // New receives a configuration structure and a prefix and returns a Viewer struct to manipulate this library.
-func New(config interface{}, prefix string) *Viewer {
-	cfg := Viewer{config: config, prefix: prefix}
+func New(config *Config, prefix string) (*Viewer, error) {
+	if config == nil {
+		return nil, ErrNilConfig
+	}
+
+	if config.Object == nil {
+		return nil, ErrEmptyStruct
+	}
+
+	if config.Path == "" {
+		config.Path = "./config.go"
+	}
+
+	cfg := Viewer{config: config.Object, prefix: prefix, confFilePath: config.Path}
 	cfg.Start()
 
-	return &cfg
+	return &cfg, nil
 }
 
 // Start starts the Viewer control struct, parsing the environment variables
-func (h *Viewer) Start() {
-	h.envs = parseEnvs(h.config)
+func (v *Viewer) Start() {
+	v.envs = parseEnvs(v.config)
+}
+
+func (v *Viewer) ParseComments() error {
+	return v.parseComments()
 }

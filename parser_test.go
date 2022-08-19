@@ -8,18 +8,50 @@ import (
 )
 
 type testStruct struct {
+	// Exported represents a sample exported field.
 	Exported    string
 	notExported bool
 
+	// StrField is a struct field.
 	StrField struct {
-		Test  string
+		// Test is a field of struct type.
+		Test string
+		// Other is another struct type.
 		Other struct {
+			// OtherTest represents a field of sub-struct.
 			OtherTest  bool
 			nonEmbeded string
 		}
 	}
 
+	// JsonExported includes a JSON tag.
 	JsonExported int `json:"name"`
+}
+
+func TestViewerNew(t *testing.T) {
+	cases := []struct {
+		testName     string
+		configStruct *Config
+		expectedErr  error
+	}{
+		{
+			testName:     "nil config struct",
+			configStruct: nil,
+			expectedErr:  ErrNilConfig,
+		},
+		{
+			testName:     "parsing nil struct",
+			configStruct: &Config{},
+			expectedErr:  ErrEmptyStruct,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.testName, func(t *testing.T) {
+			_, err := New(tc.configStruct, "")
+			assert.ErrorIs(t, err, tc.expectedErr)
+		})
+	}
 }
 
 func TestParseEnvsValues(t *testing.T) {
@@ -73,7 +105,10 @@ func TestParseEnvsValues(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.testName, func(t *testing.T) {
-			helper := New(tc.testStruct, "")
+			structViewerConfig := Config{Object: tc.testStruct}
+			helper, err := New(&structViewerConfig, "")
+			assert.NoError(t, err, "failed to instantiate viewer")
+
 			envs := helper.ParseEnvs()
 
 			assert.Len(t, envs, tc.expectedLen)
@@ -96,7 +131,10 @@ func TestParseEnvsLen(t *testing.T) {
 		}{Test: "test"},
 		JsonExported: 5,
 	}
-	helper := New(testStruct, "TYK_")
+
+	structViewerConfig := Config{Object: testStruct}
+	helper, err := New(&structViewerConfig, "TYK_")
+	assert.NoError(t, err, "failed to instantiate viewer")
 
 	envs := helper.ParseEnvs()
 
@@ -119,11 +157,24 @@ func TestParseEnvsPrefix(t *testing.T) {
 	}
 
 	prefix := "TYK_TEST_"
-	helper := New(testStruct, prefix)
+	structViewerConfig := Config{Object: testStruct}
+	helper, err := New(&structViewerConfig, prefix)
+	assert.NoError(t, err, "failed to instantiate viewer")
 
 	envs := helper.ParseEnvs()
 
 	for _, env := range envs {
 		assert.True(t, strings.HasPrefix(env, prefix))
+	}
+}
+
+func TestParseComments(t *testing.T) {
+	viewer, err := New(&Config{Object: testStruct{}, Path: "./parser_test.go"}, "TYK_")
+	assert.NoError(t, err, "failed to instantiate viewer")
+	err = viewer.parseComments()
+	assert.NoError(t, err, "failed to parse comments")
+
+	for _, env := range viewer.Envs() {
+		assert.NotEmpty(t, env.Desc, "failed to parse %v comments", env.Field)
 	}
 }
