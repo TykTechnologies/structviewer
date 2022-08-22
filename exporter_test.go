@@ -59,8 +59,8 @@ func TestJSONHandler(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusOK,
 			expectedJSONOutput: fmt.Sprintln(
-				`{"name":"name_value",`+
-					`"data":{"object_1":1,"object_2":true},`+
+				`{"name":"name_value",` +
+					`"data":{"object_1":1,"object_2":true},` +
 					`"metadata":{"key_99":{"id":99,"value":"key99"}}}`,
 			),
 		},
@@ -157,10 +157,10 @@ func TestEnvsHandler(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusOK,
 			expectedJSONOutput: fmt.Sprintln(
-				`["NAME:name_value",`+
-					`"DATA_OBJECT1:1",`+
-					`"DATA_OBJECT2:true",`+
-					`"METADATA:map[key_99:{99 key99}]",`+
+				`["NAME:name_value",` +
+					`"DATA_OBJECT1:1",` +
+					`"DATA_OBJECT2:true",` +
+					`"METADATA:map[key_99:{99 key99}]",` +
 					`"OMITTEDVALUE:"]`,
 			),
 		},
