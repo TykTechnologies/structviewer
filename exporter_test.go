@@ -71,9 +71,7 @@ func TestJSONHandler(t *testing.T) {
 			// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
 			// pass 'nil' as the third parameter.
 			req, err := http.NewRequest("GET", "/", nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+			assert.NoError(t, err)
 
 			structViewerConfig := Config{Object: tc.givenConfig}
 			helper, err := New(&structViewerConfig, "")
@@ -171,9 +169,7 @@ func TestEnvsHandler(t *testing.T) {
 			// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
 			// pass 'nil' as the third parameter.
 			req, err := http.NewRequest("GET", "/", nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+			assert.NoError(t, err)
 
 			structViewerConfig := Config{Object: tc.givenConfig}
 			helper, err := New(&structViewerConfig, tc.givenPrefix)
