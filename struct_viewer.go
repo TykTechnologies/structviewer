@@ -25,6 +25,10 @@ type Config struct {
 	// Object represents an object that is going to be parsed.
 	Object interface{}
 
+	// ParseComments decides parsing comments of given Object or not. If it is set to false,
+	// the comment parser skips parsing comments of given Object.
+	ParseComments bool
+
 	// Path is the file path of the Object. Needed for comment parser.
 	// Default value is "./config.go".
 	Path string
@@ -45,16 +49,17 @@ func New(config *Config, prefix string) (*Viewer, error) {
 	}
 
 	cfg := Viewer{config: config.Object, prefix: prefix, confFilePath: config.Path}
-	cfg.Start()
+	err := cfg.start(config.ParseComments)
 
-	return &cfg, nil
+	return &cfg, err
 }
 
 // Start starts the Viewer control struct, parsing the environment variables
-func (v *Viewer) Start() {
+func (v *Viewer) start(parseComments bool) error {
 	v.envs = parseEnvs(v.config, v.prefix)
-}
+	if parseComments {
+		return v.parseComments()
+	}
 
-func (v *Viewer) ParseComments() error {
-	return v.parseComments()
+	return nil
 }
