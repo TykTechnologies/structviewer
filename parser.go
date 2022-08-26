@@ -30,7 +30,6 @@ func (v *Viewer) ParseEnvs() []string {
 // EnvNotation takes JSON notation of a configuration field (e.g, 'listen_port') and returns EnvVar object of the given
 // notation.
 func (v *Viewer) EnvNotation(jsonField string) EnvVar {
-	//for _, env := range h.envs {
 	for i := 0; i < len(v.envs); i++ {
 		if jsonField == v.envs[i].ConfigField {
 			return *v.envs[i]
