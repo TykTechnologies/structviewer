@@ -1,28 +1,42 @@
 package struct_viewer
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
+type InnerStructType struct {
+	// DummyAddr represents an address.
+	DummyAddr string `json:"dummy_addr"`
+}
+
+type StructType struct {
+	// Enable represents status.
+	Enable bool            `json:"enable"`
+	Inner  InnerStructType `json:"inner"`
+}
+
 type testStruct struct {
 	// Exported represents a sample exported field.
-	Exported    string
+	Exported    string `json:"exported"`
 	notExported bool
 
 	// StrField is a struct field.
 	StrField struct {
 		// Test is a field of struct type.
-		Test string
-		// Other is another struct type.
+		Test  string `json:"test"`
 		Other struct {
 			// OtherTest represents a field of sub-struct.
-			OtherTest  bool
-			nonEmbeded string
+			OtherTest   bool `json:"other_test"`
+			nonEmbedded string
 		}
 	}
+
+	// ST is another struct type.
+	ST StructType `json:"st"`
 
 	// JsonExported includes a JSON tag.
 	JsonExported int `json:"name"`
@@ -121,12 +135,11 @@ func TestParseEnvsLen(t *testing.T) {
 	testStruct := testStruct{
 		Exported:    "val1",
 		notExported: true,
-
 		StrField: struct {
-			Test  string
+			Test  string `json:"test"`
 			Other struct {
-				OtherTest  bool
-				nonEmbeded string
+				OtherTest   bool `json:"other_test"`
+				nonEmbedded string
 			}
 		}{Test: "test"},
 		JsonExported: 5,
@@ -138,7 +151,7 @@ func TestParseEnvsLen(t *testing.T) {
 
 	envs := helper.ParseEnvs()
 
-	assert.Len(t, envs, 4)
+	assert.Len(t, envs, 6)
 }
 
 func TestParseEnvsPrefix(t *testing.T) {
@@ -147,10 +160,10 @@ func TestParseEnvsPrefix(t *testing.T) {
 		notExported: true,
 
 		StrField: struct {
-			Test  string
+			Test  string `json:"test"`
 			Other struct {
-				OtherTest  bool
-				nonEmbeded string
+				OtherTest   bool `json:"other_test"`
+				nonEmbedded string
 			}
 		}{Test: "test"},
 		JsonExported: 5,
@@ -177,4 +190,38 @@ func TestParseComments(t *testing.T) {
 	for _, env := range viewer.Envs() {
 		assert.NotEmpty(t, env.Desc, "failed to parse %v comments", env.Field)
 	}
+}
+
+func TestEnvNotation(t *testing.T) {
+	const prefix = "TYK_"
+	viewer, err := New(&Config{Object: testStruct{}, Path: "./parser_test.go"}, prefix)
+	assert.NoError(t, err, "failed to instantiate viewer")
+
+	testCases := []struct {
+		jsonNotation string
+		expectedEnv  string
+	}{
+		{
+			jsonNotation: "exported",
+			expectedEnv:  fmt.Sprintf("%s%s", prefix, "EXPORTED"),
+		},
+		{
+			jsonNotation: "st.enable",
+			expectedEnv:  fmt.Sprintf("%s%s", prefix, "ST_ENABLE"),
+		},
+		{
+			jsonNotation: "st.inner.dummy_addr",
+			expectedEnv:  fmt.Sprintf("%s%s", prefix, "ST_INNER_DUMMYADDR"),
+		},
+		{
+			jsonNotation: "name",
+			expectedEnv:  fmt.Sprintf("%s%s", prefix, "NAME"),
+		},
+	}
+
+	for _, tc := range testCases {
+		envVar := viewer.EnvNotation(tc.jsonNotation)
+		assert.Equal(t, tc.expectedEnv, envVar.Env, "failed to get env notation of %s", tc.jsonNotation)
+	}
+
 }

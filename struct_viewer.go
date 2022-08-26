@@ -52,7 +52,7 @@ func New(config *Config, prefix string) (*Viewer, error) {
 
 // Start starts the Viewer control struct, parsing the environment variables
 func (v *Viewer) Start() {
-	v.envs = parseEnvs(v.config)
+	v.envs = parseEnvs(v.config, v.prefix)
 }
 
 func (v *Viewer) ParseComments() error {
