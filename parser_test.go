@@ -223,5 +223,37 @@ func TestEnvNotation(t *testing.T) {
 		envVar := viewer.EnvNotation(tc.jsonNotation)
 		assert.Equal(t, tc.expectedEnv, envVar.Env, "failed to get env notation of %s", tc.jsonNotation)
 	}
+}
 
+func TestJSONNotation(t *testing.T) {
+	const prefix = "TYK_"
+	viewer, err := New(&Config{Object: testStruct{}, Path: "./parser_test.go"}, prefix)
+	assert.NoError(t, err, "failed to instantiate viewer")
+
+	testCases := []struct {
+		envNotation  string
+		expectedJSON string
+	}{
+		{
+			envNotation:  fmt.Sprintf("%s%s", prefix, "EXPORTED"),
+			expectedJSON: "exported",
+		},
+		{
+			envNotation:  fmt.Sprintf("%s%s", prefix, "ST_ENABLE"),
+			expectedJSON: "st.enable",
+		},
+		{
+			envNotation:  fmt.Sprintf("%s%s", prefix, "ST_INNER_DUMMYADDR"),
+			expectedJSON: "st.inner.dummy_addr",
+		},
+		{
+			envNotation:  fmt.Sprintf("%s%s", prefix, "NAME"),
+			expectedJSON: "name",
+		},
+	}
+
+	for _, tc := range testCases {
+		envVar := viewer.JSONNotation(tc.envNotation)
+		assert.Equal(t, tc.expectedJSON, envVar.ConfigField, "failed to get JSON notation of %s", tc.envNotation)
+	}
 }

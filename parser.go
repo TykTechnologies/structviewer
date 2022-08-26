@@ -40,6 +40,17 @@ func (v *Viewer) EnvNotation(jsonField string) EnvVar {
 	return EnvVar{}
 }
 
+// JSONNotation takes environment variable and returns EnvVars object of the given environment variable.
+func (v *Viewer) JSONNotation(envVarNotation string) EnvVar {
+	for i := 0; i < len(v.envs); i++ {
+		if v.prefix+v.envs[i].Key == envVarNotation {
+			return *v.envs[i]
+		}
+	}
+
+	return EnvVar{}
+}
+
 // Envs returns environment variables parsed by struct-viewer.
 func (v *Viewer) Envs() []*EnvVar {
 	return v.envs
