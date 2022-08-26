@@ -188,7 +188,7 @@ func TestParseComments(t *testing.T) {
 	assert.NoError(t, err, "failed to parse comments")
 
 	for _, env := range viewer.Envs() {
-		assert.NotEmpty(t, env.Desc, "failed to parse %v comments", env.Field)
+		assert.NotEmpty(t, env.Description, "failed to parse %v comments", env.field)
 	}
 }
 

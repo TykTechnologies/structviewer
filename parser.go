@@ -42,7 +42,7 @@ func (v *Viewer) EnvNotation(jsonField string) EnvVar {
 // JSONNotation takes environment variable and returns EnvVars object of the given environment variable.
 func (v *Viewer) JSONNotation(envVarNotation string) EnvVar {
 	for i := 0; i < len(v.envs); i++ {
-		if v.prefix+v.envs[i].Key == envVarNotation {
+		if v.prefix+v.envs[i].key == envVarNotation {
 			return *v.envs[i]
 		}
 	}
@@ -89,7 +89,7 @@ func (v *Viewer) parseInnerFields(s *ast.StructType) {
 
 		envVar := v.get(confField.Name)
 		if comment != "" && envVar != nil {
-			envVar.Desc = strings.TrimSpace(comment)
+			envVar.Description = strings.TrimSpace(comment)
 		}
 
 		if structType, ok := structField.Type.(*ast.StructType); ok {
@@ -100,7 +100,7 @@ func (v *Viewer) parseInnerFields(s *ast.StructType) {
 
 func (v *Viewer) get(field string) *EnvVar {
 	for _, e := range v.envs {
-		if e.Field == field {
+		if e.field == field {
 			return e
 		}
 	}
@@ -122,15 +122,15 @@ func parseEnvs(config interface{}, prefix string) []*EnvVar {
 				envsInner := parseEnvs(field.Value(), prefix)
 
 				for i := range envsInner {
-					envsInner[i].Key = newEnv.Key + "_" + envsInner[i].Key
+					envsInner[i].key = newEnv.key + "_" + envsInner[i].key
 					envsInner[i].ConfigField = newEnv.ConfigField + "." + envsInner[i].ConfigField
-					envsInner[i].Env = prefix + envsInner[i].Key
+					envsInner[i].Env = prefix + envsInner[i].key
 				}
 
 				envs = append(envs, envsInner...)
 			} else {
 				newEnv.setValue(field)
-				newEnv.Env = prefix + newEnv.Key
+				newEnv.Env = prefix + newEnv.key
 				envs = append(envs, newEnv)
 			}
 		}
@@ -141,17 +141,18 @@ func parseEnvs(config interface{}, prefix string) []*EnvVar {
 
 // EnvVar is a key:value string struct for environment variables representation
 type EnvVar struct {
-	Key         string `json:"key"`
-	Value       string `json:"value"`
-	Desc        string `json:"desc"`
-	Field       string `json:"field"`
-	Env         string `json:"env"`
+	key   string `json:"-"`
+	field string `json:"-"`
+
 	ConfigField string `json:"config_field"`
+	Env         string `json:"env"`
+	Description string `json:"description,omitempty"`
+	Value       string `json:"value"`
 }
 
 // String returns a key:value string from EnvVar
 func (ev EnvVar) String() string {
-	return ev.Key + ":" + ev.Value
+	return ev.key + ":" + ev.Value
 }
 
 func (ev *EnvVar) setKey(field *structs.Field) {
@@ -165,9 +166,9 @@ func (ev *EnvVar) setKey(field *structs.Field) {
 
 	key = strings.ReplaceAll(key, "_", "")
 	key = strings.ToUpper(key)
-	ev.Key = key
+	ev.key = key
 	ev.ConfigField = jsonTag
-	ev.Field = field.Name()
+	ev.field = field.Name()
 }
 
 func (ev *EnvVar) setValue(field *structs.Field) {
