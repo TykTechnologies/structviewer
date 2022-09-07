@@ -142,10 +142,15 @@ func (ev *EnvVar) setKey(field *structs.Field) {
 }
 
 func (ev *EnvVar) setValue(field *structs.Field) {
-	if structs.IsStruct(field.Value()) {
-		ev.Value = fmt.Sprintf("%+v", field.Value())
-		return
-	}
+	sensitive := field.Tag("sensitive")
+	if sensitive == "true" {
+		ev.Value = "****"
+	} else {
+		if structs.IsStruct(field.Value()) {
+			ev.Value = fmt.Sprintf("%+v", field.Value())
+			return
+		}
 
-	ev.Value = fmt.Sprint(field.Value())
+		ev.Value = fmt.Sprint(field.Value())
+	}
 }

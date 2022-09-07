@@ -101,6 +101,40 @@ func TestParseEnvsValues(t *testing.T) {
 			expectedLen:  1,
 			expectedEnvs: []string{"KEY:Value"},
 		},
+		{
+			testName: "KEY:VALUE with sensitive true tag",
+			testStruct: struct {
+				Key string `json:"key" sensitive:"true"`
+			}{
+				Key: "Value",
+			},
+			expectedLen:  1,
+			expectedEnvs: []string{"KEY:****"},
+		},
+		{
+			testName: "KEY:VALUE with sensitive false tag",
+			testStruct: struct {
+				Key string `json:"key" sensitive:"false"`
+			}{
+				Key: "Value",
+			},
+			expectedLen:  1,
+			expectedEnvs: []string{"KEY:Value"},
+		},
+		{
+			testName: "KEY:VALUE with internal struct sensitive true tag",
+			testStruct: struct {
+				Key struct {
+					SubKey string `json:"subkey" sensitive:"true"`
+				} `json:"key" sensitive:"false"`
+			}{
+				Key: struct {
+					SubKey string `json:"subkey" sensitive:"true"`
+				}{SubKey: "Value"},
+			},
+			expectedLen:  1,
+			expectedEnvs: []string{"KEY_SUBKEY:****"},
+		},
 	}
 
 	for _, tc := range tcs {
