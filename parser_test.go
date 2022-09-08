@@ -202,8 +202,12 @@ func TestEnvNotation(t *testing.T) {
 		expectedEnv  string
 	}{
 		{
-			jsonNotation: "exported",
-			expectedEnv:  fmt.Sprintf("%s%s", prefix, "EXPORTED"),
+			jsonNotation: "",
+			expectedEnv:  "",
+		},
+		{
+			jsonNotation: "non_existent",
+			expectedEnv:  "",
 		},
 		{
 			jsonNotation: "st.enable",
@@ -234,6 +238,14 @@ func TestJSONNotation(t *testing.T) {
 		envNotation  string
 		expectedJSON string
 	}{
+		{
+			envNotation:  "",
+			expectedJSON: "",
+		},
+		{
+			envNotation:  fmt.Sprintf("%s%s", prefix, "NONEXISTENT"),
+			expectedJSON: "",
+		},
 		{
 			envNotation:  fmt.Sprintf("%s%s", prefix, "EXPORTED"),
 			expectedJSON: "exported",
