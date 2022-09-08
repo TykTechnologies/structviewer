@@ -39,7 +39,7 @@ type testStruct struct {
 	ST StructType `json:"st"`
 
 	// JsonExported includes a JSON tag.
-	JsonExported int `json:"name"`
+	JsonExported int `json:"json_exported"`
 }
 
 func TestViewerNew(t *testing.T) {
@@ -194,78 +194,118 @@ func TestParseComments(t *testing.T) {
 
 func TestEnvNotation(t *testing.T) {
 	const prefix = "TYK_"
-	viewer, err := New(&Config{Object: testStruct{}, Path: "./parser_test.go"}, prefix)
-	assert.NoError(t, err, "failed to instantiate viewer")
+	viewerWithComment, err := New(
+		&Config{
+			Object: testStruct{},
+			Path:   "./parser_test.go",
+		},
+		prefix,
+	)
+	assert.NoError(t, err, "failed to instantiate viewer with comment parser")
 
 	testCases := []struct {
-		jsonNotation string
-		expectedEnv  string
+		viewer          *Viewer
+		jsonNotation    string
+		expectedEnv     string
+		expectedComment string
 	}{
 		{
-			jsonNotation: "",
-			expectedEnv:  "",
+			viewer:          viewerWithComment,
+			jsonNotation:    "",
+			expectedEnv:     "",
+			expectedComment: "",
 		},
 		{
-			jsonNotation: "non_existent",
-			expectedEnv:  "",
+			viewer:          viewerWithComment,
+			jsonNotation:    "non_existent",
+			expectedEnv:     "",
+			expectedComment: "",
 		},
 		{
-			jsonNotation: "st.enable",
-			expectedEnv:  fmt.Sprintf("%s%s", prefix, "ST_ENABLE"),
+			viewer:          viewerWithComment,
+			jsonNotation:    "st.enable",
+			expectedEnv:     fmt.Sprintf("%s%s", prefix, "ST_ENABLE"),
+			expectedComment: "Enable represents status.",
 		},
 		{
-			jsonNotation: "st.inner.dummy_addr",
-			expectedEnv:  fmt.Sprintf("%s%s", prefix, "ST_INNER_DUMMYADDR"),
+			viewer:          viewerWithComment,
+			jsonNotation:    "st.inner.dummy_addr",
+			expectedEnv:     fmt.Sprintf("%s%s", prefix, "ST_INNER_DUMMYADDR"),
+			expectedComment: "DummyAddr represents an address.",
 		},
 		{
-			jsonNotation: "name",
-			expectedEnv:  fmt.Sprintf("%s%s", prefix, "NAME"),
+			viewer:          viewerWithComment,
+			jsonNotation:    "json_exported",
+			expectedEnv:     fmt.Sprintf("%s%s", prefix, "JSONEXPORTED"),
+			expectedComment: "JsonExported includes a JSON tag.",
 		},
 	}
 
 	for _, tc := range testCases {
-		envVar := viewer.EnvNotation(tc.jsonNotation)
+		envVar := tc.viewer.EnvNotation(tc.jsonNotation)
 		assert.Equal(t, tc.expectedEnv, envVar.Env, "failed to get env notation of %s", tc.jsonNotation)
 	}
 }
 
 func TestJSONNotation(t *testing.T) {
 	const prefix = "TYK_"
-	viewer, err := New(&Config{Object: testStruct{}, Path: "./parser_test.go"}, prefix)
-	assert.NoError(t, err, "failed to instantiate viewer")
+	viewerWithComment, err := New(
+		&Config{
+			Object:        testStruct{},
+			Path:          "./parser_test.go",
+			ParseComments: true,
+		},
+		prefix,
+	)
+	assert.NoError(t, err, "failed to instantiate viewer with comment parser")
 
 	testCases := []struct {
-		envNotation  string
-		expectedJSON string
+		viewer          *Viewer
+		envNotation     string
+		expectedJSON    string
+		expectedComment string
 	}{
 		{
-			envNotation:  "",
-			expectedJSON: "",
+			viewer:          viewerWithComment,
+			envNotation:     "",
+			expectedJSON:    "",
+			expectedComment: "",
 		},
 		{
-			envNotation:  fmt.Sprintf("%s%s", prefix, "NONEXISTENT"),
-			expectedJSON: "",
+			viewer:          viewerWithComment,
+			envNotation:     fmt.Sprintf("%s%s", prefix, "NONEXISTENT"),
+			expectedJSON:    "",
+			expectedComment: "",
 		},
 		{
-			envNotation:  fmt.Sprintf("%s%s", prefix, "EXPORTED"),
-			expectedJSON: "exported",
+			viewer:          viewerWithComment,
+			envNotation:     fmt.Sprintf("%s%s", prefix, "EXPORTED"),
+			expectedJSON:    "exported",
+			expectedComment: "Exported represents a sample exported field.",
 		},
 		{
-			envNotation:  fmt.Sprintf("%s%s", prefix, "ST_ENABLE"),
-			expectedJSON: "st.enable",
+			viewer:          viewerWithComment,
+			envNotation:     fmt.Sprintf("%s%s", prefix, "ST_ENABLE"),
+			expectedJSON:    "st.enable",
+			expectedComment: "Enable represents status.",
 		},
 		{
-			envNotation:  fmt.Sprintf("%s%s", prefix, "ST_INNER_DUMMYADDR"),
-			expectedJSON: "st.inner.dummy_addr",
+			viewer:          viewerWithComment,
+			envNotation:     fmt.Sprintf("%s%s", prefix, "ST_INNER_DUMMYADDR"),
+			expectedJSON:    "st.inner.dummy_addr",
+			expectedComment: "DummyAddr represents an address.",
 		},
 		{
-			envNotation:  fmt.Sprintf("%s%s", prefix, "NAME"),
-			expectedJSON: "name",
+			viewer:          viewerWithComment,
+			envNotation:     fmt.Sprintf("%s%s", prefix, "JSONEXPORTED"),
+			expectedJSON:    "json_exported",
+			expectedComment: "JsonExported includes a JSON tag.",
 		},
 	}
 
 	for _, tc := range testCases {
-		envVar := viewer.JSONNotation(tc.envNotation)
+		envVar := tc.viewer.JSONNotation(tc.envNotation)
 		assert.Equal(t, tc.expectedJSON, envVar.ConfigField, "failed to get JSON notation of %s", tc.envNotation)
+		assert.Equal(t, tc.expectedComment, envVar.Description, "failed to parse comments of %s", tc.envNotation)
 	}
 }
