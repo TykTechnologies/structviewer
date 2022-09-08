@@ -141,13 +141,24 @@ func parseEnvs(config interface{}, prefix string) []*EnvVar {
 
 // EnvVar is a key:value string struct for environment variables representation
 type EnvVar struct {
-	key   string `json:"-"`
+	// key represents an environment notation without prefix. It is used internally to generate environment variable
+	// notations from given struct fields. For example, consider the following struct:
+	//	outer_field: {
+	//		inner_field: true
+	//	}
+	// For inner_field, the key is OUTERFIELD_INNERFIELD.
+	key string `json:"-"`
+	// field represents raw field names of the given struct fields.
 	field string `json:"-"`
 
+	// ConfigField represents a JSON notation of the given struct fields.
 	ConfigField string `json:"config_field"`
-	Env         string `json:"env"`
+	// Env represents an environment variable notation of the given struct fields.
+	Env string `json:"env"`
+	// Description represents the comment of the given struct fields.
 	Description string `json:"description,omitempty"`
-	Value       string `json:"value"`
+	// Value represents the value of the given struct fields.
+	Value string `json:"value"`
 }
 
 // String returns a key:value string from EnvVar
