@@ -1,25 +1,69 @@
-# tyk-templates
+# struct_viewer
 
-Template repo for all your template needs.
-- **For a new repo** Create your repository using this repo as a template ([GitHub instruction](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template#creating-a-repository-from-a-template)).
-- **For an existing repo** please make sure your repo has all the required templates which are defined in the [section below](#current-template-in-the-repo) by simply copying the relevant templates or add content that is in the template but not in your repo files.
+The struct_viewer package is a Go library that provides functionality for managing application configurations using Go struct types and environment variables. It allows you to define your configuration as a struct and easily populate it with values from environment variables
 
-## Current template in the repo
+## Installation
 
-1. [Contribution guidelines](./CONTRIBUTING.md) 
-2. [PR template](./.github/pull_request_template.md)
-3. [Bug report template](./.github/ISSUE_TEMPLATE/bug_report.md)
-4. [Feature request template](./.github/ISSUE_TEMPLATE/feature_request.md) 
-5. [Contributor License Agreement](./CLA.md)
-6. [License](./LICENSE)  *from tyk-gateway*
-7. [Default Repo README](./.github/README-tempalte.md), which resides in `/.github`
+To install the struct_viewer package, use the go get command:
+
+```bash
+go get -u github.com/TykTechnologies/struct_viewer
+```
+
+## Usage
+```go
+package main
+
+import (
+    "fmt"
+    "net/http"
+
+    "github.com/yourusername/struct-viewer"
+)
+
+type Config struct {
+    ListenPort int    `env:"listen_port"`
+    Debug      bool   `env:"debug"`
+    LogFile    string `env:"log_file"`
+}
+
+func main() {
+    config := &struct_viewer.Config{
+        Object: &Config{
+            ListenPort: 8080,
+            Debug:      true,
+            LogFile:    "/var/log/app.log",
+        },
+        Path:          "./config.go",
+        ParseComments: true,
+    }
+
+    // prefix is added to each env var
+    v, err := struct_viewer.New(config, "APP_")
+    if err != nil {
+        panic(err)
+    }
+
+    http.HandleFunc("/config", v.JSONHandler)
+    http.HandleFunc("/envs", v.EnvsHandler)
+    http.ListenAndServe(":8080", nil)
+}
+```
+
+This will expose two endpoints:
+
+- `/config`: returns a json representation of the config struct
+- `/envs`: returns a json representation of the environment variables of the config struct
+
+You can pass query parameters `field` or `env` to the endpoints to retrieve specific config fields or specific environment variables.
+
+## Limitations
+
+- Only exported fields in struct are parsed
+- Only struct fields can have comments in them
+- Single file parsing
+- No obfuscation
 
 
-## Backlog / WIP
-1. Common GitHub workflows you use across all the repo (e.g. spell checker)
-2. Make releases to this repo.
-
-
-## Adjustments / Changes / Updates
-Please feel free to submit PRs, bugs and feature request when you think the templates needs fix or improvement.
-
+##  Contributing
+Contributions are welcome! If you find any issues or have suggestions for improvement, please open an issue or submit a pull request on GitHub.
