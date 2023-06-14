@@ -1,6 +1,6 @@
 module github.com/TykTechnologies/struct-viewer
 
-go 1.17
+go 1.19
 
 require (
 	github.com/fatih/structs v1.1.0
