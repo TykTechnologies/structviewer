@@ -7,7 +7,7 @@ The struct_viewer package is a Go library that provides functionality for managi
 To install the struct_viewer package, use the go get command:
 
 ```bash
-go get -u github.com/TykTechnologies/struct_viewer
+go get -u github.com/TykTechnologies/struct-viewer
 ```
 
 ## Usage
@@ -18,7 +18,7 @@ import (
     "fmt"
     "net/http"
 
-    "github.com/yourusername/struct-viewer"
+    "github.com/TykTechnologies/tyk/struct_viewer"
 )
 
 type Config struct {
