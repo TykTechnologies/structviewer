@@ -22,9 +22,9 @@ import (
 )
 
 type Config struct {
-    ListenPort int    `env:"listen_port"`
-    Debug      bool   `env:"debug"`
-    LogFile    string `env:"log_file"`
+    ListenPort int    `json:"listen_port"`
+    Debug      bool   `json:"debug"`
+    LogFile    string `json:"log_file"`
 }
 
 func main() {
