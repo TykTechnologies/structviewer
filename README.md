@@ -11,42 +11,47 @@ go get -u github.com/TykTechnologies/struct-viewer
 ```
 
 ## Usage
+
 ```go
 package main
 
 import (
-    "fmt"
-    "net/http"
+	"log"
+	"net/http"
 
-    "github.com/TykTechnologies/tyk/struct_viewer"
+	struct_viewer "github.com/TykTechnologies/struct-viewer"
 )
 
 type Config struct {
-    ListenPort int    `json:"listen_port"`
-    Debug      bool   `json:"debug"`
-    LogFile    string `json:"log_file"`
+	ListenPort int    `json:"listen_port"`
+	Debug      bool   `json:"debug"`
+	LogFile    string `json:"log_file"`
 }
 
 func main() {
-    config := &struct_viewer.Config{
-        Object: &Config{
-            ListenPort: 8080,
-            Debug:      true,
-            LogFile:    "/var/log/app.log",
-        },
-        Path:          "./config.go",
-        ParseComments: true,
-    }
+	config := &struct_viewer.Config{
+		Object: &Config{
+			ListenPort: 8080,
+			Debug:      true,
+			LogFile:    "/var/log/app.log",
+		},
+		Path:          "./main.go",
+		ParseComments: true,
+	}
 
-    // prefix is added to each env var
-    v, err := struct_viewer.New(config, "APP_")
-    if err != nil {
-        panic(err)
-    }
+	// prefix is added to each env var
+	v, err := struct_viewer.New(config, "APP_")
+	if err != nil {
+		panic(err)
+	}
 
-    http.HandleFunc("/config", v.JSONHandler)
-    http.HandleFunc("/envs", v.EnvsHandler)
-    http.ListenAndServe(":8080", nil)
+	http.HandleFunc("/config", v.JSONHandler)
+	http.HandleFunc("/envs", v.EnvsHandler)
+	log.Println("Running server on port :8080")
+	err = http.ListenAndServe(":8080", nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
 }
 ```
 
@@ -64,6 +69,6 @@ You can pass query parameters `field` or `env` to the endpoints to retrieve spec
 - Single file parsing
 - No obfuscation
 
+## Contributing
 
-##  Contributing
 Contributions are welcome! If you find any issues or have suggestions for improvement, please open an issue or submit a pull request on GitHub.
