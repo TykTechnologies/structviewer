@@ -13,7 +13,7 @@ import (
 	"github.com/fatih/structs"
 )
 
-// ParseEnvs parse Viewer config field, generating a string slice of prefix+key:value of each config field
+// ParseEnvs parse Viewer config field, generating a map[string]interface{} of prefix+key:value of each config field
 func (v *Viewer) ParseEnvs() map[string]interface{} {
 	envs := make(map[string]interface{})
 	envVars := v.envs
