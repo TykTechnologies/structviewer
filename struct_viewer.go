@@ -7,12 +7,12 @@ import (
 
 // Viewer is the pkg control structure where the prefix and env vars are stored.
 type Viewer struct {
-	config       interface{}
-	prefix       string
-	confFilePath string
-
-	envs []*EnvVar
-	file *ast.File
+	config         interface{}
+	prefix         string
+	confFilePath   string
+	obfuscatedTags map[string]struct{}
+	envs           []*EnvVar
+	file           *ast.File
 }
 
 var (
@@ -32,6 +32,8 @@ type Config struct {
 	// Path is the file path of the Object. Needed for comment parser.
 	// Default value is "./config.go".
 	Path string
+
+	ObfuscatedTags []string
 }
 
 // New receives a configuration structure and a prefix and returns a Viewer struct to manipulate this library.
@@ -48,7 +50,13 @@ func New(config *Config, prefix string) (*Viewer, error) {
 		config.Path = "./config.go"
 	}
 
-	cfg := Viewer{config: config.Object, prefix: prefix, confFilePath: config.Path}
+	obfuscatedTags := make(map[string]struct{})
+	for _, tag := range config.ObfuscatedTags {
+		obfuscatedTags[tag] = struct{}{}
+	}
+
+	cfg := Viewer{config: config.Object, prefix: prefix, confFilePath: config.Path, obfuscatedTags: obfuscatedTags}
+
 	err := cfg.start(config.ParseComments)
 
 	return &cfg, err
@@ -56,6 +64,10 @@ func New(config *Config, prefix string) (*Viewer, error) {
 
 // Start starts the Viewer control struct, parsing the environment variables
 func (v *Viewer) start(parseComments bool) error {
+	err := v.obfuscateTags()
+	if err != nil {
+		return err
+	}
 	v.envs = parseEnvs(v.config, v.prefix)
 	if parseComments {
 		return v.parseComments()

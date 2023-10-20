@@ -1,10 +1,13 @@
 package struct_viewer
 
 import (
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"log"
+	"reflect"
 	"strings"
 
 	"github.com/fatih/structs"
@@ -101,6 +104,40 @@ func (v *Viewer) get(field string) *EnvVar {
 	for _, e := range v.envs {
 		if e.field == field {
 			return e
+		}
+	}
+
+	return nil
+}
+
+func (v *Viewer) obfuscateTags() error {
+	val := reflect.ValueOf(v.config)
+
+	// If we have a pointer, dereference it to get the actual value
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+
+	if val.Kind() != reflect.Struct {
+		return errors.New("expecting a struct")
+	}
+
+	typ := val.Type()
+
+	for i := 0; i < val.NumField(); i++ {
+		fieldVal := val.Field(i)
+		fieldType := typ.Field(i)
+
+		if !fieldVal.CanSet() {
+			log.Println("WARN: unable to obfuscate field", fieldType.Name, "is unexported or unsettable")
+			continue
+		}
+
+		jsonTag := fieldType.Tag.Get("json")
+
+		if _, shouldObfuscate := v.obfuscatedTags[jsonTag]; shouldObfuscate {
+			zeroValue := reflect.Zero(fieldVal.Type())
+			fieldVal.Set(zeroValue)
 		}
 	}
 
