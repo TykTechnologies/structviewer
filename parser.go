@@ -10,18 +10,17 @@ import (
 	"github.com/fatih/structs"
 )
 
-// ParseEnvs parse Viewer config field, generating a string slice of prefix+key:value of each config field
-func (v *Viewer) ParseEnvs() []string {
-	var envs []string
+// ParseEnvs parse Viewer config field, generating a map[string]interface{} of prefix+key:value of each config field
+func (v *Viewer) ParseEnvs() map[string]interface{} {
+	envs := make(map[string]interface{})
 	envVars := v.envs
 
 	if len(envVars) == 0 {
 		envVars = parseEnvs(v.config, v.prefix)
 	}
 
-	for i := range envVars {
-		env := envVars[i]
-		envs = append(envs, v.prefix+env.String())
+	for _, value := range envVars {
+		envs[v.prefix+value.key] = value.Value
 	}
 
 	return envs
@@ -158,12 +157,12 @@ type EnvVar struct {
 	// Description represents the comment of the given struct fields.
 	Description string `json:"description,omitempty"`
 	// Value represents the value of the given struct fields.
-	Value string `json:"value"`
+	Value interface{} `json:"value"`
 }
 
 // String returns a key:value string from EnvVar
 func (ev EnvVar) String() string {
-	return ev.key + ":" + ev.Value
+	return ev.key + ":" + fmt.Sprintf("%s", ev.Value)
 }
 
 func (ev *EnvVar) setKey(field *structs.Field) {
@@ -188,5 +187,5 @@ func (ev *EnvVar) setValue(field *structs.Field) {
 		return
 	}
 
-	ev.Value = fmt.Sprint(field.Value())
+	ev.Value = field.Value()
 }
