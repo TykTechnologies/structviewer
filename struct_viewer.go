@@ -33,6 +33,8 @@ type Config struct {
 	// Default value is "./config.go".
 	Path string
 
+	// ObfuscatedTags is a list of JSON tags that should be obfuscated when parsing the struct.
+	// If a field has one of these tags, the value will be replaced with the Zero value of that field.
 	ObfuscatedTags []string
 }
 
