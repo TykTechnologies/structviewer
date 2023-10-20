@@ -161,9 +161,9 @@ type EnvVar struct {
 }
 
 // String returns a key:value string from EnvVar
-// func (ev EnvVar) String() string {
-// 	return ev.key + ":" + ev.Value
-// }
+func (ev EnvVar) String() string {
+	return ev.key + ":" + fmt.Sprintf("%s", ev.Value)
+}
 
 func (ev *EnvVar) setKey(field *structs.Field) {
 	key := field.Name()
