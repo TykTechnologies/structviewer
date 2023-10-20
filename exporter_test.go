@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -100,7 +99,7 @@ func TestJSONHandler(t *testing.T) {
 			expectedStatusCode: http.StatusOK,
 			expectedJSONOutput: toJSON(t, EnvVar{
 				Env:         "TYK_DATA_OBJECT1",
-				Value:       strconv.Itoa(complexStruct.Data.Object1),
+				Value:       complexStruct.Data.Object1,
 				ConfigField: "data.object_1",
 			}),
 		},
@@ -161,7 +160,7 @@ func TestEnvsHandler(t *testing.T) {
 				"field_value",
 			},
 			expectedStatusCode: http.StatusOK,
-			expectedJSONOutput: fmt.Sprintln(`["FIELDNAME:field_value"]`),
+			expectedJSONOutput: fmt.Sprintln(`{"FIELDNAME":"field_value"}`),
 		},
 		{
 			testName: "simple struct with prefix",
@@ -172,18 +171,18 @@ func TestEnvsHandler(t *testing.T) {
 			},
 			givenPrefix:        "TEST_",
 			expectedStatusCode: http.StatusOK,
-			expectedJSONOutput: fmt.Sprintln(`["TEST_FIELDNAME:field_value"]`),
+			expectedJSONOutput: fmt.Sprintln(`{"TEST_FIELDNAME":"field_value"}`),
 		},
 		{
 			testName:           "complex struct struct",
 			givenConfig:        complexStruct,
 			expectedStatusCode: http.StatusOK,
 			expectedJSONOutput: fmt.Sprintln(
-				`["NAME:name_value",` +
-					`"DATA_OBJECT1:1",` +
-					`"DATA_OBJECT2:true",` +
-					`"METADATA:map[key_99:{99 key99}]",` +
-					`"OMITTEDVALUE:"]`,
+				`{"NAME":"name_value",` +
+					`"DATA_OBJECT1":1,` +
+					`"DATA_OBJECT2":true,` +
+					`"METADATA":{"key_99":{"id":99, "value":"key99"}},` +
+					`"OMITTEDVALUE":""}`,
 			),
 		},
 		{
@@ -206,7 +205,7 @@ func TestEnvsHandler(t *testing.T) {
 			expectedStatusCode: http.StatusOK,
 			expectedJSONOutput: toJSON(t, EnvVar{
 				Env:         "TYK_DATA_OBJECT1",
-				Value:       strconv.Itoa(complexStruct.Data.Object1),
+				Value:       complexStruct.Data.Object1,
 				ConfigField: "data.object_1",
 			}),
 		},

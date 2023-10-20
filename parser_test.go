@@ -73,7 +73,7 @@ func TestParseEnvsValues(t *testing.T) {
 		testName     string
 		testStruct   interface{}
 		expectedLen  int
-		expectedEnvs []string
+		expectedEnvs map[string]interface{}
 	}{
 		{
 			testName: "KEY:VALUE common struct",
@@ -83,7 +83,7 @@ func TestParseEnvsValues(t *testing.T) {
 				Key: "Value",
 			},
 			expectedLen:  1,
-			expectedEnvs: []string{"KEY:Value"},
+			expectedEnvs: map[string]interface{}{"KEY": "Value"},
 		},
 		{
 			testName: "KEY:VALUE with json tag",
@@ -93,7 +93,7 @@ func TestParseEnvsValues(t *testing.T) {
 				Key: "Value",
 			},
 			expectedLen:  1,
-			expectedEnvs: []string{"JSONNAME:Value"},
+			expectedEnvs: map[string]interface{}{"JSONNAME": "Value"},
 		},
 		{
 			testName: "KEY:VALUE with json tag and omitempty",
@@ -103,7 +103,7 @@ func TestParseEnvsValues(t *testing.T) {
 				Key: "Value",
 			},
 			expectedLen:  1,
-			expectedEnvs: []string{"JSONNAME:Value"},
+			expectedEnvs: map[string]interface{}{"JSONNAME": "Value"},
 		},
 		{
 			testName: "KEY:VALUE with json '-' tag",
@@ -113,7 +113,7 @@ func TestParseEnvsValues(t *testing.T) {
 				Key: "Value",
 			},
 			expectedLen:  1,
-			expectedEnvs: []string{"KEY:Value"},
+			expectedEnvs: map[string]interface{}{"KEY": "Value"},
 		},
 	}
 
@@ -176,7 +176,7 @@ func TestParseEnvsPrefix(t *testing.T) {
 
 	envs := helper.ParseEnvs()
 
-	for _, env := range envs {
+	for env := range envs {
 		assert.True(t, strings.HasPrefix(env, prefix))
 	}
 }
