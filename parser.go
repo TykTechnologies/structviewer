@@ -111,6 +111,10 @@ func (v *Viewer) get(field string) *EnvVar {
 }
 
 func (v *Viewer) obfuscateTags() error {
+	if len(v.obfuscatedTags) == 0 {
+		return nil
+	}
+
 	val := reflect.ValueOf(v.config)
 
 	// If we have a pointer, dereference it to get the actual value
