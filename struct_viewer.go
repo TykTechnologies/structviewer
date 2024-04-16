@@ -3,6 +3,8 @@ package struct_viewer
 import (
 	"errors"
 	"go/ast"
+
+	"github.com/fatih/structs"
 )
 
 // Viewer is the pkg control structure where the prefix and env vars are stored.
@@ -11,13 +13,15 @@ type Viewer struct {
 	prefix       string
 	confFilePath string
 
-	envs []*EnvVar
-	file *ast.File
+	envs      []*EnvVar
+	configMap map[string]interface{}
+	file      *ast.File
 }
 
 var (
-	ErrNilConfig   = errors.New("invalid Config structure provided")
-	ErrEmptyStruct = errors.New("empty Struct in configuration")
+	ErrNilConfig         = errors.New("invalid Config structure provided")
+	ErrEmptyStruct       = errors.New("empty Struct in configuration")
+	ErrInvalidObjectType = errors.New("invalid object type")
 )
 
 // Config represents configuration structure.
@@ -44,6 +48,10 @@ func New(config *Config, prefix string) (*Viewer, error) {
 		return nil, ErrEmptyStruct
 	}
 
+	if !structs.IsStruct(config.Object) {
+		return nil, ErrInvalidObjectType
+	}
+
 	if config.Path == "" {
 		config.Path = "./config.go"
 	}
@@ -58,8 +66,10 @@ func New(config *Config, prefix string) (*Viewer, error) {
 func (v *Viewer) start(parseComments bool) error {
 	v.envs = parseEnvs(v.config, v.prefix)
 	if parseComments {
-		return v.parseComments()
+		v.parseComments()
 	}
+
+	v.configMap = v.parseConfig()
 
 	return nil
 }

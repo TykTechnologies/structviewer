@@ -19,7 +19,7 @@ import (
 	"log"
 	"net/http"
 
-	struct_viewer "github.com/TykTechnologies/struct-viewer"
+	"github.com/TykTechnologies/structviewer"
 )
 
 type Config struct {
@@ -40,7 +40,7 @@ func main() {
 	}
 
 	// prefix is added to each env var
-	v, err := struct_viewer.New(config, "APP_")
+	v, err := structviewer.New(config, "APP_")
 	if err != nil {
 		panic(err)
 	}

@@ -30,7 +30,7 @@ func (v *Viewer) JSONHandler(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := json.NewEncoder(rw).Encode(v.config)
+	err := json.NewEncoder(rw).Encode(v.configMap)
 	if err != nil {
 		rw.WriteHeader(http.StatusInternalServerError)
 		return

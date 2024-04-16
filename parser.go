@@ -82,6 +82,15 @@ func (v *Viewer) parseComments() error {
 	return nil
 }
 
+func (v *Viewer) parseConfig() map[string]interface{} {
+	configMap := map[string]interface{}{}
+	for _, field := range v.envs {
+		configMap[field.field] = field
+	}
+
+	return configMap
+}
+
 func (v *Viewer) parseInnerFields(s *ast.StructType) {
 	for _, structField := range s.Fields.List {
 		comment := structField.Doc.Text()
