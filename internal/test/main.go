@@ -7,22 +7,47 @@ import (
 	structviewer "github.com/TykTechnologies/structviewer"
 )
 
-type Config struct {
-	// ListenPort represents the port to listen on.
-	ListenPort int `json:"listen_port"`
-	// Debug represents the debug mode.
-	Debug bool `json:"debug"`
-	// LogFile represents the log file path.
-	LogFile string `json:"log_file"`
+type complexType struct {
+	// Name represents a name.
+	Name string `json:"name,omitempty"`
+	// Data represents a data structure.
+	Data struct {
+		// Object1 represents an integer.
+		Object1 int `json:"object_1,omitempty"`
+		// Object2 represents a boolean.
+		Object2 bool `json:"object_2,omitempty"`
+	} `json:"data"`
+	// Metadata represents a metadata map.
+	Metadata map[string]struct {
+		// ID represents an integer.
+		ID int `json:"id,omitempty"`
+		// Value represents a string.
+		Value string `json:"value,omitempty"`
+	} `json:"metadata,omitempty"`
+	// OmittedValue represents an omitted value.
+	OmittedValue string `json:"omitted_value,omitempty"`
+}
+
+var complexStruct = complexType{
+	Name: "name_value",
+	Data: struct {
+		Object1 int  `json:"object_1,omitempty"`
+		Object2 bool `json:"object_2,omitempty"`
+	}{
+		Object1: 1,
+		Object2: true,
+	},
+	Metadata: map[string]struct {
+		ID    int    `json:"id,omitempty"`
+		Value string `json:"value,omitempty"`
+	}{
+		"key_99": {ID: 99, Value: "key99"},
+	},
 }
 
 func main() {
 	config := &structviewer.Config{
-		Object: &Config{
-			ListenPort: 8080,
-			Debug:      true,
-			LogFile:    "/var/log/app.log",
-		},
+		Object:        &complexStruct,
 		Path:          "./main.go",
 		ParseComments: true,
 	}

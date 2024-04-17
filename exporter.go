@@ -12,7 +12,7 @@ const (
 
 // JSONHandler exposes the configuration struct as JSON fields
 func (v *Viewer) JSONHandler(rw http.ResponseWriter, r *http.Request) {
-	if v.config == nil {
+	if v.configMap == nil {
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}

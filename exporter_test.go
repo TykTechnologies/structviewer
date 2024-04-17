@@ -48,6 +48,13 @@ func toJSON(t *testing.T, data interface{}) string {
 	return string(jsonData)
 }
 
+// complexStructToMap returns a map representation of the complexStruct.
+func complexStructToMap() map[string]interface{} {
+	envs := parseEnvs(complexStruct, "TYK_")
+	configMap := parseConfig(envs)
+	return configMap
+}
+
 func setQueryParams(req *http.Request, queryParamKey, queryParamVal string) {
 	if queryParamVal != "" {
 		q := req.URL.Query()
@@ -65,6 +72,7 @@ func TestJSONHandler(t *testing.T) {
 
 		expectedStatusCode int
 		expectedJSONOutput string
+		shouldDeleteConfig bool
 	}{
 		{
 			testName: "simple struct",
@@ -74,13 +82,19 @@ func TestJSONHandler(t *testing.T) {
 				"field_value",
 			},
 			expectedStatusCode: http.StatusOK,
-			expectedJSONOutput: fmt.Sprintln(`{"field_name":"field_value"}`),
+			expectedJSONOutput: toJSON(t, map[string]interface{}{
+				"Name": map[string]interface{}{
+					"config_field": "field_name",
+					"env":          "TYK_FIELDNAME",
+					"value":        "field_value",
+				},
+			}),
 		},
 		{
-			testName:           "complex struct struct",
+			testName:           "complex struct",
 			givenConfig:        complexStruct,
 			expectedStatusCode: http.StatusOK,
-			expectedJSONOutput: toJSON(t, complexStruct),
+			expectedJSONOutput: toJSON(t, complexStructToMap()),
 		},
 		{
 			testName:           "valid field of complexStruct via query param",
@@ -111,6 +125,17 @@ func TestJSONHandler(t *testing.T) {
 			expectedStatusCode: http.StatusOK,
 			expectedJSONOutput: toJSON(t, EnvVar{}),
 		},
+		{
+			testName: "not initialized",
+			givenConfig: struct {
+				Name string `json:"field_name"`
+			}{
+				"field_value",
+			},
+			expectedStatusCode: http.StatusInternalServerError,
+			expectedJSONOutput: "",
+			shouldDeleteConfig: true,
+		},
 	}
 
 	for _, tc := range tcs {
@@ -126,6 +151,10 @@ func TestJSONHandler(t *testing.T) {
 			helper, err := New(&structViewerConfig, "TYK_")
 			assert.NoError(t, err, "failed to instantiate viewer")
 
+			if tc.shouldDeleteConfig {
+				helper.configMap = nil
+			}
+
 			// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
 			rr := httptest.NewRecorder()
 			handler := http.HandlerFunc(helper.JSONHandler)
@@ -136,9 +165,9 @@ func TestJSONHandler(t *testing.T) {
 
 			// Check the status code is what we expect.
 			assert.Equal(t, tc.expectedStatusCode, rr.Code)
-
-			// Check the response body is what we expect.
-			assert.JSONEq(t, tc.expectedJSONOutput, rr.Body.String())
+			if tc.expectedStatusCode == http.StatusOK {
+				assert.JSONEq(t, tc.expectedJSONOutput, rr.Body.String())
+			}
 		})
 	}
 }

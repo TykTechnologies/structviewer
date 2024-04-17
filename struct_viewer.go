@@ -9,13 +9,21 @@ import (
 
 // Viewer is the pkg control structure where the prefix and env vars are stored.
 type Viewer struct {
-	config       interface{}
-	prefix       string
+	// config is the configuration structure.
+	config interface{}
+	// prefix is the prefix of the environment variables.
+	prefix string
+	// confFilePath is the file path of the configuration structure.
 	confFilePath string
 
-	envs      []*EnvVar
+	// envs is the slice of environment variables.
+	// It is used to expose the environment variables as JSON in EnvsHandler.
+	envs []*EnvVar
+	// configMap is the map representation of the configuration structure.
+	// It is used to expose the configuration structure as JSON in JSONHandler.
 	configMap map[string]interface{}
-	file      *ast.File
+	// file is the ast.File of the configuration structure.
+	file *ast.File
 }
 
 var (
@@ -69,7 +77,7 @@ func (v *Viewer) start(parseComments bool) error {
 		v.parseComments()
 	}
 
-	v.configMap = v.parseConfig()
+	v.configMap = parseConfig(v.envs)
 
 	return nil
 }

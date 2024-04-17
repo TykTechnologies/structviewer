@@ -58,6 +58,11 @@ func TestViewerNew(t *testing.T) {
 			configStruct: &Config{},
 			expectedErr:  ErrEmptyStruct,
 		},
+		{
+			testName:     "invalid object type",
+			expectedErr:  ErrInvalidObjectType,
+			configStruct: &Config{Object: "string"},
+		},
 	}
 
 	for _, tc := range cases {

@@ -82,10 +82,10 @@ func (v *Viewer) parseComments() error {
 	return nil
 }
 
-func (v *Viewer) parseConfig() map[string]interface{} {
+func parseConfig(envs []*EnvVar) map[string]interface{} {
 	configMap := map[string]interface{}{}
-	for _, field := range v.envs {
-		configMap[field.field] = field
+	for _, f := range envs {
+		configMap[f.field] = f
 	}
 
 	return configMap
