@@ -52,6 +52,7 @@ func toJSON(t *testing.T, data interface{}) string {
 func complexStructToMap() map[string]interface{} {
 	envs := parseEnvs(complexStruct, "TYK_", "")
 	configMap := parseConfig(envs)
+
 	return configMap
 }
 

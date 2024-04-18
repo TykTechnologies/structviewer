@@ -74,7 +74,9 @@ func New(config *Config, prefix string) (*Viewer, error) {
 func (v *Viewer) start(parseComments bool) error {
 	v.envs = parseEnvs(v.config, v.prefix, "")
 	if parseComments {
-		v.parseComments()
+		if err := v.parseComments(); err != nil {
+			return err
+		}
 	}
 
 	v.configMap = parseConfig(v.envs)

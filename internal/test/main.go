@@ -22,7 +22,7 @@ type StructType struct {
 type testStruct struct {
 	// Exported represents a sample exported field.
 	Exported    string `json:"exported"`
-	notExported bool
+	notExported bool   //lint:ignore U1000 Unused field is used for testing purposes.
 
 	// StrField is a struct field.
 	StrField struct {
@@ -57,7 +57,9 @@ func main() {
 
 	http.HandleFunc("/config", v.JSONHandler)
 	http.HandleFunc("/envs", v.EnvsHandler)
+
 	log.Println("Running server on port :8080")
+
 	err = http.ListenAndServe(":8080", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)

@@ -60,7 +60,6 @@ func (v *Viewer) envNotationHelper(jsonField string, envs []*EnvVar) *EnvVar {
 				return ev
 			}
 		}
-
 	}
 
 	return nil
@@ -186,13 +185,12 @@ func (v *Viewer) get(field string, envs []*EnvVar) *EnvVar {
 				return ev
 			}
 		}
-
 	}
 
 	return nil
 }
 
-func parseEnvs(config interface{}, prefix string, configField string) []*EnvVar {
+func parseEnvs(config interface{}, prefix, configField string) []*EnvVar {
 	var envs []*EnvVar
 
 	s := structs.New(config)
@@ -201,9 +199,11 @@ func parseEnvs(config interface{}, prefix string, configField string) []*EnvVar 
 		if field.IsExported() {
 			newEnv := &EnvVar{}
 			newEnv.setKey(field)
+
 			if configField != "" && configField[len(configField)-1] != '.' {
 				configField += "."
 			}
+
 			if structs.IsStruct(field.Value()) {
 
 				envsInner := parseEnvs(field.Value(), prefix+newEnv.key+"_", configField+newEnv.ConfigField)
