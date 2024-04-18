@@ -166,6 +166,7 @@ func TestJSONHandler(t *testing.T) {
 
 			// Check the status code is what we expect.
 			assert.Equal(t, tc.expectedStatusCode, rr.Code)
+
 			if tc.expectedStatusCode == http.StatusOK {
 				assert.JSONEq(t, tc.expectedJSONOutput, rr.Body.String())
 			}
