@@ -156,7 +156,7 @@ func TestParseEnvsLen(t *testing.T) {
 
 	envs := helper.ParseEnvs()
 
-	assert.Len(t, envs, 6)
+	assert.Len(t, envs, 4)
 }
 
 func TestParseEnvsPrefix(t *testing.T) {

@@ -68,6 +68,10 @@ func (v *Viewer) envNotationHelper(jsonField string, envs []*EnvVar) *EnvVar {
 
 // JSONNotation takes environment variable and returns EnvVars object of the given environment variable.
 func (v *Viewer) JSONNotation(envVarNotation string) EnvVar {
+	if envVarNotation == "" {
+		return EnvVar{}
+	}
+
 	ev := v.jsonNotationHelper(envVarNotation, v.envs)
 	if ev == nil {
 		ev = &EnvVar{}
@@ -78,7 +82,7 @@ func (v *Viewer) JSONNotation(envVarNotation string) EnvVar {
 
 func (v *Viewer) jsonNotationHelper(envVarNotation string, envs []*EnvVar) *EnvVar {
 	for i := 0; i < len(envs); i++ {
-		if v.prefix+envs[i].key == envVarNotation {
+		if envs[i].Env == envVarNotation {
 			return envs[i]
 		}
 
@@ -98,7 +102,6 @@ func (v *Viewer) jsonNotationHelper(envVarNotation string, envs []*EnvVar) *EnvV
 				return ev
 			}
 		}
-
 	}
 
 	return nil

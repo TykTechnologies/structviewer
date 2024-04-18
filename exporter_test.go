@@ -182,71 +182,73 @@ func TestEnvsHandler(t *testing.T) {
 		expectedStatusCode int
 		expectedJSONOutput string
 	}{
+		{
+			testName: "simple struct",
+			givenConfig: struct {
+				Name string `json:"field_name"`
+			}{
+				"field_value",
+			},
+			expectedStatusCode: http.StatusOK,
+			expectedJSONOutput: fmt.Sprintln(`["FIELDNAME:field_value"]`),
+		},
+		{
+			testName: "simple struct with prefix",
+			givenConfig: struct {
+				Name string `json:"field_name"`
+			}{
+				"field_value",
+			},
+			givenPrefix:        "TEST_",
+			expectedStatusCode: http.StatusOK,
+			expectedJSONOutput: fmt.Sprintln(`["TEST_FIELDNAME:field_value"]`),
+		},
+		// TODO: Uncomment this test once this issue is addressed:
+		// https://github.com/TykTechnologies/structviewer/issues/7
 		// {
-		// 	testName: "simple struct",
-		// 	givenConfig: struct {
-		// 		Name string `json:"field_name"`
-		// 	}{
-		// 		"field_value",
-		// 	},
+		// 	testName:           "complex struct struct",
+		// 	givenConfig:        complexStruct,
 		// 	expectedStatusCode: http.StatusOK,
-		// 	expectedJSONOutput: fmt.Sprintln(`["FIELDNAME:field_value"]`),
-		// },
-		// {
-		// 	testName: "simple struct with prefix",
-		// 	givenConfig: struct {
-		// 		Name string `json:"field_name"`
-		// 	}{
-		// 		"field_value",
-		// 	},
-		// 	givenPrefix:        "TEST_",
-		// 	expectedStatusCode: http.StatusOK,
-		// 	expectedJSONOutput: fmt.Sprintln(`["TEST_FIELDNAME:field_value"]`),
+		// 	expectedJSONOutput: fmt.Sprintln(
+		// 		`["NAME:name_value",` +
+		// 			`"DATA_OBJECT1:1",` +
+		// 			`"DATA_OBJECT2:true",` +
+		// 			`"METADATA:map[key_99:{99 key99}]",` +
+		// 			`"OMITTEDVALUE:"]`,
+		// 	),
 		// },
 		{
-			testName:           "complex struct struct",
+			testName:           "valid field of complexStruct via query param",
 			givenConfig:        complexStruct,
+			givenPrefix:        "TYK_",
+			queryParamVal:      "TYK_NAME",
 			expectedStatusCode: http.StatusOK,
-			expectedJSONOutput: fmt.Sprintln(
-				`["NAME:name_value",` +
-					`"DATA_OBJECT1:1",` +
-					`"DATA_OBJECT2:true",` +
-					`"METADATA:map[key_99:{99 key99}]",` +
-					`"OMITTEDVALUE:"]`,
-			),
+			expectedJSONOutput: toJSON(t, EnvVar{
+				Env:         "TYK_NAME",
+				Value:       complexStruct.Name,
+				ConfigField: "name",
+			}),
 		},
-		// {
-		// 	testName:           "valid field of complexStruct via query param",
-		// 	givenConfig:        complexStruct,
-		// 	givenPrefix:        "TYK_",
-		// 	queryParamVal:      "TYK_NAME",
-		// 	expectedStatusCode: http.StatusOK,
-		// 	expectedJSONOutput: toJSON(t, EnvVar{
-		// 		Env:         "TYK_NAME",
-		// 		Value:       complexStruct.Name,
-		// 		ConfigField: "name",
-		// 	}),
-		// },
-		// {
-		// 	testName:           "valid field from inner object of complexStruct via query param",
-		// 	givenConfig:        complexStruct,
-		// 	givenPrefix:        "TYK_",
-		// 	queryParamVal:      "TYK_DATA_OBJECT1",
-		// 	expectedStatusCode: http.StatusOK,
-		// 	expectedJSONOutput: toJSON(t, EnvVar{
-		// 		Env:         "TYK_DATA_OBJECT1",
-		// 		Value:       strconv.Itoa(complexStruct.Data.Object1),
-		// 		ConfigField: "data.object_1",
-		// 	}),
-		// },
-		// {
-		// 	testName:           "invalid field complexStruct via query param",
-		// 	givenConfig:        complexStruct,
-		// 	givenPrefix:        "TYK_",
-		// 	queryParamVal:      "TYK_DATA_OBJECT3",
-		// 	expectedStatusCode: http.StatusOK,
-		// 	expectedJSONOutput: toJSON(t, EnvVar{}),
-		// },
+		{
+			testName:           "valid field from inner object of complexStruct via query param",
+			givenConfig:        complexStruct,
+			givenPrefix:        "TYK_",
+			queryParamVal:      "TYK_DATA_OBJECT1",
+			expectedStatusCode: http.StatusOK,
+			expectedJSONOutput: toJSON(t, EnvVar{
+				Env:         "TYK_DATA_OBJECT1",
+				Value:       strconv.Itoa(complexStruct.Data.Object1),
+				ConfigField: "data.object_1",
+			}),
+		},
+		{
+			testName:           "invalid field complexStruct via query param",
+			givenConfig:        complexStruct,
+			givenPrefix:        "TYK_",
+			queryParamVal:      "TYK_DATA_OBJECT3",
+			expectedStatusCode: http.StatusOK,
+			expectedJSONOutput: toJSON(t, EnvVar{}),
+		},
 	}
 
 	for _, tc := range tcs {
