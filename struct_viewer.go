@@ -1,4 +1,4 @@
-package struct_viewer
+package structviewer
 
 import (
 	"errors"
