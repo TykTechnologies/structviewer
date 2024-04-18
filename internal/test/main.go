@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	structviewer "github.com/TykTechnologies/structviewer"
+	"github.com/TykTechnologies/structviewer"
 )
 
 type InnerStructType struct {
