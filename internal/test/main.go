@@ -7,47 +7,44 @@ import (
 	structviewer "github.com/TykTechnologies/structviewer"
 )
 
-type complexType struct {
-	// Name represents a name.
-	Name string `json:"name,omitempty"`
-	// Data represents a data structure.
-	Data struct {
-		// Object1 represents an integer.
-		Object1 int `json:"object_1,omitempty"`
-		// Object2 represents a boolean.
-		Object2 bool `json:"object_2,omitempty"`
-	} `json:"data"`
-	// Metadata represents a metadata map.
-	Metadata map[string]struct {
-		// ID represents an integer.
-		ID int `json:"id,omitempty"`
-		// Value represents a string.
-		Value string `json:"value,omitempty"`
-	} `json:"metadata,omitempty"`
-	// OmittedValue represents an omitted value.
-	OmittedValue string `json:"omitted_value,omitempty"`
+type InnerStructType struct {
+	// DummyAddr represents an address.
+	DummyAddr string `json:"dummy_addr"`
 }
 
-var complexStruct = complexType{
-	Name: "name_value",
-	Data: struct {
-		Object1 int  `json:"object_1,omitempty"`
-		Object2 bool `json:"object_2,omitempty"`
-	}{
-		Object1: 1,
-		Object2: true,
-	},
-	Metadata: map[string]struct {
-		ID    int    `json:"id,omitempty"`
-		Value string `json:"value,omitempty"`
-	}{
-		"key_99": {ID: 99, Value: "key99"},
-	},
+type StructType struct {
+	// Enable represents status.
+	// Enable bool `json:"enable"`
+	// Inner is an inner struct.
+	Inner InnerStructType `json:"inner"`
+}
+
+type testStruct struct {
+	// // Exported represents a sample exported field.
+	// Exported    string `json:"exported"`
+	// notExported bool
+
+	// // StrField is a struct field.
+	// StrField struct {
+	// 	// Test is a field of struct type.
+	// 	Test  string `json:"test"`
+	// 	Other struct {
+	// 		// OtherTest represents a field of sub-struct.
+	// 		OtherTest   bool `json:"other_test"`
+	// 		nonEmbedded string
+	// 	}
+	// }
+
+	// ST is another struct type.
+	ST StructType `json:"st"`
+
+	// // JsonExported includes a JSON tag.
+	// JsonExported int `json:"json_exported"`
 }
 
 func main() {
 	config := &structviewer.Config{
-		Object:        &complexStruct,
+		Object:        &testStruct{},
 		Path:          "./main.go",
 		ParseComments: true,
 	}
