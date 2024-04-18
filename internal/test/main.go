@@ -7,11 +7,13 @@ import (
 	"github.com/TykTechnologies/structviewer"
 )
 
+// InnerStructType represents an inner struct.
 type InnerStructType struct {
 	// DummyAddr represents an address.
 	DummyAddr string `json:"dummy_addr"`
 }
 
+// StructType represents a struct type.
 type StructType struct {
 	// Enable represents status.
 	Enable bool `json:"enable"`
@@ -38,8 +40,8 @@ type testStruct struct {
 	// ST is another struct type.
 	ST StructType `json:"st"`
 
-	// JsonExported includes a JSON tag.
-	JsonExported int `json:"json_exported"`
+	// JSONExported includes a JSON tag.
+	JSONExported int `json:"json_exported"`
 }
 
 func main() {

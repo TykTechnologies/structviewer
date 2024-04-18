@@ -27,8 +27,11 @@ type Viewer struct {
 }
 
 var (
-	ErrNilConfig         = errors.New("invalid Config structure provided")
-	ErrEmptyStruct       = errors.New("empty Struct in configuration")
+	// ErrNilConfig is returned when the Config struct is nil.
+	ErrNilConfig = errors.New("invalid Config structure provided")
+	// ErrEmptyStruct is returned when config.Object is nil
+	ErrEmptyStruct = errors.New("empty Struct in configuration")
+	// ErrInvalidObjectType is returned when config.Object is not a struct.
 	ErrInvalidObjectType = errors.New("invalid object type")
 )
 

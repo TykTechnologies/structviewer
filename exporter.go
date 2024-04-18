@@ -6,8 +6,10 @@ import (
 )
 
 const (
+	// JSONQueryKey is the query key for JSONHandler
 	JSONQueryKey = "field"
-	EnvQueryKey  = "env"
+	// EnvQueryKey is the query key for EnvsHandler
+	EnvQueryKey = "env"
 )
 
 // JSONHandler exposes the configuration struct as JSON fields

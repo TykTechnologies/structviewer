@@ -38,8 +38,8 @@ type testStruct struct {
 	// ST is another struct type.
 	ST StructType `json:"st"`
 
-	// JsonExported includes a JSON tag.
-	JsonExported int `json:"json_exported"`
+	// JSONExported includes a JSON tag.
+	JSONExported int `json:"json_exported"`
 }
 
 func TestViewerNew(t *testing.T) {
@@ -147,7 +147,7 @@ func TestParseEnvsLen(t *testing.T) {
 				nonEmbedded string
 			}
 		}{Test: "test"},
-		JsonExported: 5,
+		JSONExported: 5,
 	}
 
 	structViewerConfig := Config{Object: testStruct}
@@ -171,7 +171,7 @@ func TestParseEnvsPrefix(t *testing.T) {
 				nonEmbedded string
 			}
 		}{Test: "test"},
-		JsonExported: 5,
+		JSONExported: 5,
 	}
 
 	prefix := "TYK_TEST_"
@@ -241,8 +241,8 @@ func TestEnvNotation(t *testing.T) {
 		{
 			viewer:          viewerWithComment,
 			jsonNotation:    "json_exported",
-			expectedEnv:     fmt.Sprintf("%s%s", prefix, "JSONEXPORTED"),
-			expectedComment: "JsonExported includes a JSON tag.",
+			expectedEnv:     fmt.Sprintf("%s%s", prefix, "JSONExported"),
+			expectedComment: "JSONExported includes a JSON tag.",
 		},
 	}
 
@@ -302,9 +302,9 @@ func TestJSONNotation(t *testing.T) {
 		},
 		{
 			viewer:          viewerWithComment,
-			envNotation:     fmt.Sprintf("%s%s", prefix, "JSONEXPORTED"),
+			envNotation:     fmt.Sprintf("%s%s", prefix, "JSONExported"),
 			expectedJSON:    "json_exported",
-			expectedComment: "JsonExported includes a JSON tag.",
+			expectedComment: "JSONExported includes a JSON tag.",
 		},
 	}
 
