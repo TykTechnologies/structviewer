@@ -16,7 +16,7 @@ func (v *Viewer) ParseEnvs() []string {
 	envVars := v.envs
 
 	if len(envVars) == 0 {
-		envVars = parseEnvs(v.config, v.prefix)
+		envVars = parseEnvs(v.config, v.prefix, "")
 	}
 
 	for i := range envVars {
@@ -30,24 +30,78 @@ func (v *Viewer) ParseEnvs() []string {
 // EnvNotation takes JSON notation of a configuration field (e.g, 'listen_port') and returns EnvVar object of the given
 // notation.
 func (v *Viewer) EnvNotation(jsonField string) EnvVar {
-	for i := 0; i < len(v.envs); i++ {
-		if jsonField == v.envs[i].ConfigField {
-			return *v.envs[i]
-		}
+	ev := v.envNotationHelper(jsonField, v.envs)
+	if ev == nil {
+		ev = &EnvVar{}
 	}
 
-	return EnvVar{}
+	return *ev
+}
+
+func (v *Viewer) envNotationHelper(jsonField string, envs []*EnvVar) *EnvVar {
+	for i := 0; i < len(envs); i++ {
+		if jsonField == envs[i].ConfigField {
+			return envs[i]
+		}
+
+		if envs[i].isStruct {
+			val, ok := envs[i].Value.(map[string]*EnvVar)
+			if !ok {
+				continue
+			}
+
+			temporarySlice := []*EnvVar{}
+			for _, v := range val {
+				temporarySlice = append(temporarySlice, v)
+			}
+
+			ev := v.envNotationHelper(jsonField, temporarySlice)
+			if ev != nil {
+				return ev
+			}
+		}
+
+	}
+
+	return nil
 }
 
 // JSONNotation takes environment variable and returns EnvVars object of the given environment variable.
 func (v *Viewer) JSONNotation(envVarNotation string) EnvVar {
-	for i := 0; i < len(v.envs); i++ {
-		if v.prefix+v.envs[i].key == envVarNotation {
-			return *v.envs[i]
-		}
+	ev := v.jsonNotationHelper(envVarNotation, v.envs)
+	if ev == nil {
+		ev = &EnvVar{}
 	}
 
-	return EnvVar{}
+	return *ev
+}
+
+func (v *Viewer) jsonNotationHelper(envVarNotation string, envs []*EnvVar) *EnvVar {
+	for i := 0; i < len(envs); i++ {
+		if v.prefix+envs[i].key == envVarNotation {
+			return envs[i]
+		}
+
+		if envs[i].isStruct {
+			val, ok := envs[i].Value.(map[string]*EnvVar)
+			if !ok {
+				continue
+			}
+
+			temporarySlice := []*EnvVar{}
+			for _, v := range val {
+				temporarySlice = append(temporarySlice, v)
+			}
+
+			ev := v.jsonNotationHelper(envVarNotation, temporarySlice)
+			if ev != nil {
+				return ev
+			}
+		}
+
+	}
+
+	return nil
 }
 
 // Envs returns environment variables parsed by struct-viewer.
@@ -135,7 +189,7 @@ func (v *Viewer) get(field string, envs []*EnvVar) *EnvVar {
 	return nil
 }
 
-func parseEnvs(config interface{}, prefix string) []*EnvVar {
+func parseEnvs(config interface{}, prefix string, configField string) []*EnvVar {
 	var envs []*EnvVar
 
 	s := structs.New(config)
@@ -144,31 +198,25 @@ func parseEnvs(config interface{}, prefix string) []*EnvVar {
 		if field.IsExported() {
 			newEnv := &EnvVar{}
 			newEnv.setKey(field)
-
+			if configField != "" && configField[len(configField)-1] != '.' {
+				configField += "."
+			}
 			if structs.IsStruct(field.Value()) {
-				envsInner := parseEnvs(field.Value(), prefix)
+
+				envsInner := parseEnvs(field.Value(), prefix+newEnv.key+"_", configField+newEnv.ConfigField)
 				kvEnvVar := map[string]*EnvVar{}
 				for i := range envsInner {
-					fmt.Println("iterating envsInner:", envsInner[i])
-					envsInner[i].key = newEnv.key + "_" + envsInner[i].key
-					if !envsInner[i].isStruct {
-						envsInner[i].ConfigField = newEnv.ConfigField + "." + envsInner[i].ConfigField
-						envsInner[i].Env = prefix + envsInner[i].key
-						fmt.Println("setting env in isStruct:", envsInner[i].Env)
-						fmt.Println("newEnv env:", newEnv.Env, "newEnv key:", newEnv.key)
-					}
 					kvEnvVar[envsInner[i].key] = envsInner[i]
 				}
 
 				newEnv.Value = kvEnvVar
-				// newEnv.Env = prefix + newEnv.key
 				newEnv.ConfigField = ""
 				newEnv.isStruct = true
 				envs = append(envs, newEnv)
 			} else {
 				newEnv.setValue(field)
 				newEnv.Env = prefix + newEnv.key
-				fmt.Println("setting env outside of isStruct:", newEnv.Env)
+				newEnv.ConfigField = configField + newEnv.ConfigField
 				envs = append(envs, newEnv)
 			}
 		}
@@ -187,8 +235,9 @@ type EnvVar struct {
 	// For inner_field, the key is OUTERFIELD_INNERFIELD.
 	key string `json:"-"`
 	// field represents raw field names of the given struct fields.
-	field    string `json:"-"`
-	isStruct bool
+	field string `json:"-"`
+	// isStruct is used internally to determine whether the given struct field is a struct or not.
+	isStruct bool `json:"-"`
 
 	// ConfigField represents a JSON notation of the given struct fields.
 	ConfigField string `json:"config_field,omitempty"`
