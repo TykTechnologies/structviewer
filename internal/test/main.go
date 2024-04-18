@@ -14,32 +14,32 @@ type InnerStructType struct {
 
 type StructType struct {
 	// Enable represents status.
-	// Enable bool `json:"enable"`
+	Enable bool `json:"enable"`
 	// Inner is an inner struct.
 	Inner InnerStructType `json:"inner"`
 }
 
 type testStruct struct {
-	// // Exported represents a sample exported field.
-	// Exported    string `json:"exported"`
-	// notExported bool
+	// Exported represents a sample exported field.
+	Exported    string `json:"exported"`
+	notExported bool
 
-	// // StrField is a struct field.
-	// StrField struct {
-	// 	// Test is a field of struct type.
-	// 	Test  string `json:"test"`
-	// 	Other struct {
-	// 		// OtherTest represents a field of sub-struct.
-	// 		OtherTest   bool `json:"other_test"`
-	// 		nonEmbedded string
-	// 	}
-	// }
+	// StrField is a struct field.
+	StrField struct {
+		// Test is a field of struct type.
+		Test  string `json:"test"`
+		Other struct {
+			// OtherTest represents a field of sub-struct.
+			OtherTest   bool `json:"other_test"`
+			nonEmbedded string
+		} `json:"other"`
+	} `json:"str_field"`
 
 	// ST is another struct type.
 	ST StructType `json:"st"`
 
-	// // JsonExported includes a JSON tag.
-	// JsonExported int `json:"json_exported"`
+	// JsonExported includes a JSON tag.
+	JsonExported int `json:"json_exported"`
 }
 
 func main() {
