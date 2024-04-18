@@ -209,7 +209,7 @@ func parseEnvs(config interface{}, prefix, configField string) []*EnvVar {
 				envsInner := parseEnvs(field.Value(), prefix+newEnv.key+"_", configField+newEnv.ConfigField)
 				kvEnvVar := map[string]*EnvVar{}
 				for i := range envsInner {
-					kvEnvVar[envsInner[i].key] = envsInner[i]
+					kvEnvVar[envsInner[i].field] = envsInner[i]
 				}
 
 				newEnv.Value = kvEnvVar
