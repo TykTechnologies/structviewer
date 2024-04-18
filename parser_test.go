@@ -241,7 +241,7 @@ func TestEnvNotation(t *testing.T) {
 		{
 			viewer:          viewerWithComment,
 			jsonNotation:    "json_exported",
-			expectedEnv:     fmt.Sprintf("%s%s", prefix, "JSONExported"),
+			expectedEnv:     fmt.Sprintf("%s%s", prefix, "JSONEXPORTED"),
 			expectedComment: "JSONExported includes a JSON tag.",
 		},
 	}
@@ -302,7 +302,7 @@ func TestJSONNotation(t *testing.T) {
 		},
 		{
 			viewer:          viewerWithComment,
-			envNotation:     fmt.Sprintf("%s%s", prefix, "JSONExported"),
+			envNotation:     fmt.Sprintf("%s%s", prefix, "JSONEXPORTED"),
 			expectedJSON:    "json_exported",
 			expectedComment: "JSONExported includes a JSON tag.",
 		},
