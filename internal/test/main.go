@@ -46,7 +46,9 @@ type testStruct struct {
 
 func main() {
 	config := &structviewer.Config{
-		Object:        &testStruct{},
+		Object: &testStruct{
+			Exported: "exported_value",
+		},
 		Path:          "./main.go",
 		ParseComments: true,
 	}
@@ -57,7 +59,8 @@ func main() {
 		panic(err)
 	}
 
-	http.HandleFunc("/config", v.JSONHandler)
+	http.HandleFunc("/config", v.ConfigHandler)
+	http.HandleFunc("/detailed-config", v.DetailedConfigHandler)
 	http.HandleFunc("/envs", v.EnvsHandler)
 
 	log.Println("Running server on port :8080")

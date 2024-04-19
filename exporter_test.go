@@ -64,7 +64,77 @@ func setQueryParams(req *http.Request, queryParamKey, queryParamVal string) {
 	}
 }
 
-func TestJSONHandler(t *testing.T) {
+func TestConfigHandler(t *testing.T) {
+	tcs := []struct {
+		testName string
+
+		givenConfig interface{}
+
+		expectedStatusCode int
+		expectedJSONOutput string
+
+		shouldDeleteConfig bool
+	}{
+		{
+			testName: "simple struct",
+			givenConfig: struct {
+				Name string `json:"field_name"`
+			}{
+				"field_value",
+			},
+			expectedStatusCode: http.StatusOK,
+			expectedJSONOutput: fmt.Sprintln(`{"field_name":"field_value"}`),
+		},
+		{
+			testName:           "complex struct struct",
+			givenConfig:        complexStruct,
+			expectedStatusCode: http.StatusOK,
+			expectedJSONOutput: toJSON(t, complexStruct),
+		},
+		{
+			testName:           "not initialized",
+			givenConfig:        complexStruct,
+			expectedStatusCode: http.StatusInternalServerError,
+			expectedJSONOutput: "",
+			shouldDeleteConfig: true,
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.testName, func(t *testing.T) {
+			// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
+			// pass 'nil' as the third parameter.
+			req, err := http.NewRequest("GET", "/", nil)
+			assert.NoError(t, err)
+
+			structViewerConfig := Config{Object: tc.givenConfig}
+			helper, err := New(&structViewerConfig, "TYK_")
+			assert.NoError(t, err, "failed to instantiate viewer")
+
+			if tc.shouldDeleteConfig {
+				helper.config = nil
+			}
+
+			// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
+			rr := httptest.NewRecorder()
+			handler := http.HandlerFunc(helper.ConfigHandler)
+
+			// Our handlers satisfy http.Handler, so we can call their ServeHTTP method
+			// directly and pass in our Request and ResponseRecorder.
+			handler.ServeHTTP(rr, req)
+
+			// Check the status code is what we expect.
+			assert.Equal(t, tc.expectedStatusCode, rr.Code)
+
+			// Check the response body is what we expect.
+			if tc.expectedStatusCode == http.StatusOK {
+				assert.JSONEq(t, tc.expectedJSONOutput, rr.Body.String())
+			}
+		})
+	}
+}
+
+func TestDetailedConfigHandler(t *testing.T) {
 	tcs := []struct {
 		testName string
 
@@ -158,7 +228,7 @@ func TestJSONHandler(t *testing.T) {
 
 			// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
 			rr := httptest.NewRecorder()
-			handler := http.HandlerFunc(helper.JSONHandler)
+			handler := http.HandlerFunc(helper.DetailedConfigHandler)
 
 			// Our handlers satisfy http.Handler, so we can call their ServeHTTP method
 			// directly and pass in our Request and ResponseRecorder.
