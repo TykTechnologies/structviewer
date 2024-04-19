@@ -7,7 +7,11 @@ tasks:
   run-tests:
     desc: "Run tests"
     cmds:
-      - go test -failfast -timeout $TEST_TIMEOUT -race -cover -coverprofile=structviewer.cov -v ./...
+      - |
+        go test -failfast -timeout $TEST_TIMEOUT -race -cover -coverprofile=structviewer.cov -v ./...
+        mkdir -p "coverage"
+        mv *.cov "coverage/"
+
   merge-coverage:
     desc: "Merge coverage files into a single file"
     cmds:
