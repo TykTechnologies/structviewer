@@ -8,4 +8,5 @@ tasks:
     desc: "Run tests"
     cmds:
       - |
-        go test -failfast -timeout $TEST_TIMEOUT -race -cover -coverprofile=structviewer.cov -v ./...
+        mkdir -p coverage
+        go test -failfast -timeout $TEST_TIMEOUT -race -cover -coverprofile=coverage/structviewer.cov -v ./...
