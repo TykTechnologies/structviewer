@@ -200,6 +200,7 @@ func parseEnvs(config interface{}, prefix, configField string) []*EnvVar {
 			newEnv := &EnvVar{}
 			newEnv.setKey(field)
 
+			// Ensuring that the configField ends with a single dot (only if it is not empty)
 			if configField != "" && configField[len(configField)-1] != '.' {
 				configField += "."
 			}
