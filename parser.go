@@ -138,10 +138,10 @@ func (v *Viewer) parseComments() error {
 	return nil
 }
 
-func parseConfig(envs []*EnvVar) map[string]interface{} {
-	configMap := map[string]interface{}{}
-	for _, f := range envs {
-		configMap[f.field] = f
+func parseConfig(envs []*EnvVar) map[string]*EnvVar {
+	configMap := map[string]*EnvVar{}
+	for _, env := range envs {
+		configMap[env.field] = env
 	}
 
 	return configMap
@@ -164,13 +164,13 @@ func (v *Viewer) parseInnerFields(s *ast.StructType) {
 }
 
 func (v *Viewer) get(field string, envs []*EnvVar) *EnvVar {
-	for _, e := range envs {
-		if e.field == field {
-			return e
+	for _, env := range envs {
+		if env.field == field {
+			return env
 		}
 
-		if e.isStruct {
-			val, ok := e.Value.(map[string]*EnvVar)
+		if env.isStruct {
+			val, ok := env.Value.(map[string]*EnvVar)
 			if !ok {
 				continue
 			}
@@ -206,7 +206,6 @@ func parseEnvs(config interface{}, prefix, configField string) []*EnvVar {
 			}
 
 			if structs.IsStruct(field.Value()) {
-
 				envsInner := parseEnvs(field.Value(), prefix+newEnv.key+"_", configField+newEnv.ConfigField)
 				kvEnvVar := map[string]*EnvVar{}
 				for i := range envsInner {

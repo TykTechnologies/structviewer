@@ -21,7 +21,7 @@ type Viewer struct {
 	envs []*EnvVar
 	// configMap is the map representation of the configuration structure.
 	// It is used to expose the configuration structure as JSON in JSONHandler.
-	configMap map[string]interface{}
+	configMap map[string]*EnvVar
 	// file is the ast.File of the configuration structure.
 	file *ast.File
 }

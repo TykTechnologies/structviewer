@@ -49,7 +49,7 @@ func toJSON(t *testing.T, data interface{}) string {
 }
 
 // complexStructToMap returns a map representation of the complexStruct.
-func complexStructToMap() map[string]interface{} {
+func complexStructToMap() map[string]*EnvVar {
 	envs := parseEnvs(complexStruct, "TYK_", "")
 	configMap := parseConfig(envs)
 
