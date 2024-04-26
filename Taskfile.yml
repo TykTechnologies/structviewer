@@ -1,0 +1,11 @@
+version: "3"
+env:
+  TEST_TIMEOUT:
+    sh: echo ${TEST_TIMEOUT:-"5m"}
+
+tasks:
+  run-tests:
+    desc: "Run tests"
+    cmds:
+      - |
+        go test -failfast -timeout $TEST_TIMEOUT -race -cover -coverprofile=structviewer.cov -v ./...

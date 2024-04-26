@@ -1,4 +1,4 @@
-package struct_viewer
+package structviewer
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ func (v *Viewer) ParseEnvs() []string {
 	envVars := v.envs
 
 	if len(envVars) == 0 {
-		envVars = parseEnvs(v.config, v.prefix)
+		envVars = parseEnvs(v.config, v.prefix, "")
 	}
 
 	for i := range envVars {
@@ -30,24 +30,80 @@ func (v *Viewer) ParseEnvs() []string {
 // EnvNotation takes JSON notation of a configuration field (e.g, 'listen_port') and returns EnvVar object of the given
 // notation.
 func (v *Viewer) EnvNotation(jsonField string) EnvVar {
-	for i := 0; i < len(v.envs); i++ {
-		if jsonField == v.envs[i].ConfigField {
-			return *v.envs[i]
+	ev := v.envNotationHelper(jsonField, v.envs)
+	if ev == nil {
+		ev = &EnvVar{}
+	}
+
+	return *ev
+}
+
+func (v *Viewer) envNotationHelper(jsonField string, envs []*EnvVar) *EnvVar {
+	for i := 0; i < len(envs); i++ {
+		if jsonField == envs[i].ConfigField {
+			return envs[i]
+		}
+
+		if envs[i].isStruct {
+			val, ok := envs[i].Value.(map[string]*EnvVar)
+			if !ok {
+				continue
+			}
+
+			temporarySlice := []*EnvVar{}
+			for _, v := range val {
+				temporarySlice = append(temporarySlice, v)
+			}
+
+			ev := v.envNotationHelper(jsonField, temporarySlice)
+			if ev != nil {
+				return ev
+			}
 		}
 	}
 
-	return EnvVar{}
+	return nil
 }
 
 // JSONNotation takes environment variable and returns EnvVars object of the given environment variable.
 func (v *Viewer) JSONNotation(envVarNotation string) EnvVar {
-	for i := 0; i < len(v.envs); i++ {
-		if v.prefix+v.envs[i].key == envVarNotation {
-			return *v.envs[i]
+	if envVarNotation == "" {
+		return EnvVar{}
+	}
+
+	ev := v.jsonNotationHelper(envVarNotation, v.envs)
+	if ev == nil {
+		ev = &EnvVar{}
+	}
+
+	return *ev
+}
+
+func (v *Viewer) jsonNotationHelper(envVarNotation string, envs []*EnvVar) *EnvVar {
+	for i := 0; i < len(envs); i++ {
+		if envs[i].Env == envVarNotation {
+			return envs[i]
+		}
+
+		if envs[i].isStruct {
+			val, ok := envs[i].Value.(map[string]*EnvVar)
+			if !ok {
+				continue
+			}
+
+			temporarySlice := []*EnvVar{}
+			for _, v := range val {
+				temporarySlice = append(temporarySlice, v)
+			}
+
+			ev := v.jsonNotationHelper(envVarNotation, temporarySlice)
+			if ev != nil {
+				return ev
+			}
 		}
 	}
 
-	return EnvVar{}
+	return nil
 }
 
 // Envs returns environment variables parsed by struct-viewer.
@@ -82,12 +138,21 @@ func (v *Viewer) parseComments() error {
 	return nil
 }
 
+func parseConfig(envs []*EnvVar) map[string]*EnvVar {
+	configMap := map[string]*EnvVar{}
+	for _, env := range envs {
+		configMap[env.field] = env
+	}
+
+	return configMap
+}
+
 func (v *Viewer) parseInnerFields(s *ast.StructType) {
 	for _, structField := range s.Fields.List {
 		comment := structField.Doc.Text()
 		confField := structField.Names[0]
 
-		envVar := v.get(confField.Name)
+		envVar := v.get(confField.Name, v.envs)
 		if comment != "" && envVar != nil {
 			envVar.Description = strings.TrimSpace(comment)
 		}
@@ -98,17 +163,34 @@ func (v *Viewer) parseInnerFields(s *ast.StructType) {
 	}
 }
 
-func (v *Viewer) get(field string) *EnvVar {
-	for _, e := range v.envs {
-		if e.field == field {
-			return e
+func (v *Viewer) get(field string, envs []*EnvVar) *EnvVar {
+	for _, env := range envs {
+		if env.field == field {
+			return env
+		}
+
+		if env.isStruct {
+			val, ok := env.Value.(map[string]*EnvVar)
+			if !ok {
+				continue
+			}
+
+			temporarySlice := []*EnvVar{}
+			for _, v := range val {
+				temporarySlice = append(temporarySlice, v)
+			}
+
+			ev := v.get(field, temporarySlice)
+			if ev != nil {
+				return ev
+			}
 		}
 	}
 
 	return nil
 }
 
-func parseEnvs(config interface{}, prefix string) []*EnvVar {
+func parseEnvs(config interface{}, prefix, configField string) []*EnvVar {
 	var envs []*EnvVar
 
 	s := structs.New(config)
@@ -118,19 +200,26 @@ func parseEnvs(config interface{}, prefix string) []*EnvVar {
 			newEnv := &EnvVar{}
 			newEnv.setKey(field)
 
-			if structs.IsStruct(field.Value()) {
-				envsInner := parseEnvs(field.Value(), prefix)
+			// Ensuring that the configField ends with a single dot (only if it is not empty)
+			if configField != "" && configField[len(configField)-1] != '.' {
+				configField += "."
+			}
 
+			if structs.IsStruct(field.Value()) {
+				envsInner := parseEnvs(field.Value(), prefix+newEnv.key+"_", configField+newEnv.ConfigField)
+				kvEnvVar := map[string]*EnvVar{}
 				for i := range envsInner {
-					envsInner[i].key = newEnv.key + "_" + envsInner[i].key
-					envsInner[i].ConfigField = newEnv.ConfigField + "." + envsInner[i].ConfigField
-					envsInner[i].Env = prefix + envsInner[i].key
+					kvEnvVar[envsInner[i].field] = envsInner[i]
 				}
 
-				envs = append(envs, envsInner...)
+				newEnv.Value = kvEnvVar
+				newEnv.ConfigField = ""
+				newEnv.isStruct = true
+				envs = append(envs, newEnv)
 			} else {
 				newEnv.setValue(field)
 				newEnv.Env = prefix + newEnv.key
+				newEnv.ConfigField = configField + newEnv.ConfigField
 				envs = append(envs, newEnv)
 			}
 		}
@@ -150,20 +239,22 @@ type EnvVar struct {
 	key string `json:"-"`
 	// field represents raw field names of the given struct fields.
 	field string `json:"-"`
+	// isStruct is used internally to determine whether the given struct field is a struct or not.
+	isStruct bool `json:"-"`
 
 	// ConfigField represents a JSON notation of the given struct fields.
-	ConfigField string `json:"config_field"`
+	ConfigField string `json:"config_field,omitempty"`
 	// Env represents an environment variable notation of the given struct fields.
-	Env string `json:"env"`
+	Env string `json:"env,omitempty"`
 	// Description represents the comment of the given struct fields.
 	Description string `json:"description,omitempty"`
 	// Value represents the value of the given struct fields.
-	Value string `json:"value"`
+	Value interface{} `json:"value"`
 }
 
 // String returns a key:value string from EnvVar
 func (ev EnvVar) String() string {
-	return ev.key + ":" + ev.Value
+	return fmt.Sprintf("%s:%s", ev.key, ev.Value)
 }
 
 func (ev *EnvVar) setKey(field *structs.Field) {

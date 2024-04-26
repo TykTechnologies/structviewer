@@ -1,4 +1,4 @@
-module github.com/TykTechnologies/struct-viewer
+module github.com/TykTechnologies/structviewer
 
 go 1.19
 

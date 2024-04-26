@@ -1,4 +1,4 @@
-package struct_viewer
+package structviewer
 
 import (
 	"encoding/json"
@@ -6,13 +6,32 @@ import (
 )
 
 const (
+	// JSONQueryKey is the query key for JSONHandler
 	JSONQueryKey = "field"
-	EnvQueryKey  = "env"
+	// EnvQueryKey is the query key for EnvsHandler
+	EnvQueryKey = "env"
 )
 
-// JSONHandler exposes the configuration struct as JSON fields
-func (v *Viewer) JSONHandler(rw http.ResponseWriter, r *http.Request) {
+// ConfigHandler exposes the configuration struct as JSON fields
+func (v *Viewer) ConfigHandler(rw http.ResponseWriter, r *http.Request) {
 	if v.config == nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	rw.Header().Set("Content-type", "application/json")
+	rw.WriteHeader(http.StatusOK)
+
+	err := json.NewEncoder(rw).Encode(v.config)
+	if err != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+}
+
+// DetailedConfigHandler exposes the detailed configuration struct as JSON fields
+func (v *Viewer) DetailedConfigHandler(rw http.ResponseWriter, r *http.Request) {
+	if v.configMap == nil {
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -30,7 +49,7 @@ func (v *Viewer) JSONHandler(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := json.NewEncoder(rw).Encode(v.config)
+	err := json.NewEncoder(rw).Encode(v.configMap)
 	if err != nil {
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
