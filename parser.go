@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"reflect"
 	"strings"
 
 	"github.com/fatih/structs"
@@ -16,7 +17,7 @@ func (v *Viewer) ParseEnvs() []string {
 	envVars := v.envs
 
 	if len(envVars) == 0 {
-		envVars = parseEnvs(v.config, v.prefix, "")
+		envVars = parseEnvs(v.config, v.prefix, "", []string{})
 	}
 
 	for i := range envVars {
@@ -190,7 +191,7 @@ func (v *Viewer) get(field string, envs []*EnvVar) *EnvVar {
 	return nil
 }
 
-func parseEnvs(config interface{}, prefix, configField string) []*EnvVar {
+func parseEnvs(config interface{}, prefix, configField string, obfuscatedFields []string) []*EnvVar {
 	var envs []*EnvVar
 
 	s := structs.New(config)
@@ -206,7 +207,7 @@ func parseEnvs(config interface{}, prefix, configField string) []*EnvVar {
 			}
 
 			if structs.IsStruct(field.Value()) {
-				envsInner := parseEnvs(field.Value(), prefix+newEnv.key+"_", configField+newEnv.ConfigField)
+				envsInner := parseEnvs(field.Value(), prefix+newEnv.key+"_", configField+newEnv.ConfigField, obfuscatedFields)
 				kvEnvVar := map[string]*EnvVar{}
 				for i := range envsInner {
 					kvEnvVar[envsInner[i].field] = envsInner[i]
@@ -215,17 +216,72 @@ func parseEnvs(config interface{}, prefix, configField string) []*EnvVar {
 				newEnv.Value = kvEnvVar
 				newEnv.ConfigField = ""
 				newEnv.isStruct = true
+
 				envs = append(envs, newEnv)
 			} else {
 				newEnv.setValue(field)
 				newEnv.Env = prefix + newEnv.key
 				newEnv.ConfigField = configField + newEnv.ConfigField
+				b := new(bool)
+				*b = false
+				newEnv.Obfuscated = b
+				if field.IsZero() {
+					for _, obfuscatedField := range obfuscatedFields {
+						if strings.EqualFold(newEnv.ConfigField, obfuscatedField) {
+							*b = true
+							newEnv.Obfuscated = b
+							break
+						}
+					}
+				}
+
 				envs = append(envs, newEnv)
 			}
 		}
 	}
 
 	return envs
+}
+func obfuscateTags(config interface{}, obfuscatedTags []string, parentSuffix string) (interface{}, error) {
+	val := reflect.ValueOf(config)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+
+	if !val.CanAddr() {
+		return nil, fmt.Errorf("cannot address value")
+	}
+
+	typ := val.Type()
+
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+		fieldValue := val.Field(i)
+
+		if !fieldValue.CanSet() {
+			continue
+		}
+
+		jsonTag := field.Tag.Get("json")
+		if fieldValue.Kind() == reflect.Struct {
+			if jsonTag != "" {
+				newStruct, err := obfuscateTags(fieldValue.Addr().Interface(), obfuscatedTags, parentSuffix+jsonTag+".")
+				if err != nil {
+					return nil, err
+				}
+				fieldValue.Set(reflect.ValueOf(newStruct).Elem())
+			}
+		} else {
+			for _, tag := range obfuscatedTags {
+				if strings.EqualFold(parentSuffix+jsonTag, tag) {
+					zeroValue := reflect.Zero(fieldValue.Type())
+					fieldValue.Set(zeroValue)
+				}
+			}
+		}
+	}
+
+	return config, nil
 }
 
 // EnvVar is a key:value string struct for environment variables representation
@@ -250,6 +306,9 @@ type EnvVar struct {
 	Description string `json:"description,omitempty"`
 	// Value represents the value of the given struct fields.
 	Value interface{} `json:"value"`
+	// Obfuscated represents whether the given struct field is obfuscated or not.
+	// This is a pointer to a boolean value to distinguish between the zero value and the actual value (because of the 'omitempty' tag).
+	Obfuscated *bool `json:"obfuscated,omitempty"`
 }
 
 // String returns a key:value string from EnvVar

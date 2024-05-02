@@ -48,9 +48,20 @@ func main() {
 	config := &structviewer.Config{
 		Object: &testStruct{
 			Exported: "exported_value",
+			ST: StructType{
+				Enable: true,
+				Inner: InnerStructType{
+					DummyAddr: "dummy_addr_value",
+				},
+			},
+			JSONExported: 10,
 		},
 		Path:          "./main.go",
 		ParseComments: true,
+		ObfuscatedTags: []string{
+			"exported",
+			"st.inner.dummy_addr",
+		},
 	}
 
 	// prefix is added to each env var

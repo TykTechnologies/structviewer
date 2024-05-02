@@ -50,7 +50,7 @@ func toJSON(t *testing.T, data interface{}) string {
 
 // complexStructToMap returns a map representation of the complexStruct.
 func complexStructToMap() map[string]*EnvVar {
-	envs := parseEnvs(complexStruct, "TYK_", "")
+	envs := parseEnvs(complexStruct, "TYK_", "", []string{})
 	configMap := parseConfig(envs)
 
 	return configMap
@@ -87,13 +87,13 @@ func TestConfigHandler(t *testing.T) {
 		},
 		{
 			testName:           "complex struct struct",
-			givenConfig:        complexStruct,
+			givenConfig:        &complexStruct,
 			expectedStatusCode: http.StatusOK,
 			expectedJSONOutput: toJSON(t, complexStruct),
 		},
 		{
 			testName:           "not initialized",
-			givenConfig:        complexStruct,
+			givenConfig:        &complexStruct,
 			expectedStatusCode: http.StatusInternalServerError,
 			expectedJSONOutput: "",
 			shouldDeleteConfig: true,
@@ -198,7 +198,7 @@ func TestDetailedConfigHandler(t *testing.T) {
 		},
 		{
 			testName: "not initialized",
-			givenConfig: struct {
+			givenConfig: &struct {
 				Name string `json:"field_name"`
 			}{
 				"field_value",

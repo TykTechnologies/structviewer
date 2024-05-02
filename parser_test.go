@@ -2,6 +2,7 @@ package structviewer
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -312,5 +313,107 @@ func TestJSONNotation(t *testing.T) {
 		envVar := tc.viewer.JSONNotation(tc.envNotation)
 		assert.Equal(t, tc.expectedJSON, envVar.ConfigField, "failed to get JSON notation of %s", tc.envNotation)
 		assert.Equal(t, tc.expectedComment, envVar.Description, "failed to parse comments of %s", tc.envNotation)
+	}
+}
+func getTestStruct() *testStruct {
+	return &testStruct{
+		Exported:    "val1",
+		notExported: true,
+		StrField: struct {
+			Test  string `json:"test"`
+			Other struct {
+				OtherTest   bool `json:"other_test"`
+				nonEmbedded string
+			}
+		}{Test: "original test", Other: struct {
+			OtherTest   bool `json:"other_test"`
+			nonEmbedded string
+		}{OtherTest: true, nonEmbedded: "nonVisible"}},
+		JSONExported: 5,
+		ST: StructType{
+			Enable: true,
+			Inner: InnerStructType{
+				DummyAddr: "dummy",
+			},
+		},
+	}
+}
+func TestObfuscateTags(t *testing.T) {
+
+	tests := []struct {
+		name           string
+		obfuscatedTags []string
+		want           interface{}
+		wantErr        bool
+	}{
+		{
+			name:           "obfuscate single exported field",
+			obfuscatedTags: []string{"exported"},
+			want: func() interface{} {
+				ts := getTestStruct()
+				ts.Exported = ""
+				return ts
+			}(),
+			wantErr: false,
+		},
+		{
+			name: "obfuscate nested field",
+			obfuscatedTags: []string{
+				"st.inner.dummy_addr",
+			},
+			want: func() interface{} {
+				ts := getTestStruct()
+				ts.ST.Inner.DummyAddr = ""
+				return ts
+			}(),
+			wantErr: false,
+		},
+		{
+			name: "obfuscate deep nested field and top level",
+			obfuscatedTags: []string{
+				"st.enable",
+				"json_exported",
+			},
+			want: func() interface{} {
+				ts := getTestStruct()
+				ts.ST.Enable = false
+				ts.JSONExported = 0
+				return ts
+			}(),
+			wantErr: false,
+		},
+		{
+			name:           "Handle missing tag gracefully",
+			obfuscatedTags: []string{"nonexistent"},
+			want:           getTestStruct(),
+			wantErr:        false,
+		},
+		{
+			name:           "Handle error when config is not pointer",
+			obfuscatedTags: []string{"exported"},
+			want:           nil,
+			wantErr:        true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var config interface{}
+			ts := getTestStruct()
+			if tt.wantErr {
+				config = *ts
+			} else {
+				config = ts
+			}
+
+			got, err := obfuscateTags(config, tt.obfuscatedTags, "")
+			if (err != nil) != tt.wantErr {
+				t.Errorf("obfuscateTags() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("obfuscateTags() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
