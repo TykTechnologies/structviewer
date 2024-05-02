@@ -4,8 +4,6 @@ import (
 	"errors"
 	"go/ast"
 	"reflect"
-
-	"github.com/fatih/structs"
 )
 
 // Viewer is the pkg control structure where the prefix and env vars are stored.
@@ -36,8 +34,6 @@ var (
 	ErrEmptyStruct = errors.New("empty Struct in configuration")
 	// ErrInvalidObjectType is returned when config.Object is not a struct.
 	ErrInvalidObjectType = errors.New("invalid object type")
-	// ErrNotPointer is returned when the struct is not a pointer.
-	ErrNotPointer = errors.New("config structure must be a pointer")
 )
 
 // Config represents configuration structure.
@@ -68,21 +64,28 @@ func New(config *Config, prefix string) (*Viewer, error) {
 		return nil, ErrEmptyStruct
 	}
 
-	if !structs.IsStruct(config.Object) {
+	objectValue := reflect.ValueOf(config.Object)
+	if objectValue.Kind() != reflect.Struct &&
+		!(objectValue.Kind() == reflect.Ptr && objectValue.Elem().Kind() == reflect.Struct) {
 		return nil, ErrInvalidObjectType
 	}
 
-	// Struct must be a pointer so we can modify its values if needed.
-	value := reflect.ValueOf(config.Object)
-	if value.Kind() != reflect.Ptr {
-		return nil, ErrNotPointer
+	// The struct must be a pointer to be able to modify its fields if they need to be obfuscated
+	// To avoid modifying the original struct, we create a copy of it
+	var objectCopy interface{}
+	if objectValue.Kind() == reflect.Ptr {
+		objectCopy = reflect.New(objectValue.Elem().Type()).Interface()
+		reflect.ValueOf(objectCopy).Elem().Set(objectValue.Elem())
+	} else {
+		objectCopy = reflect.New(objectValue.Type()).Interface()
+		reflect.ValueOf(objectCopy).Elem().Set(objectValue)
 	}
 
 	if config.Path == "" {
 		config.Path = "./config.go"
 	}
 
-	cfg := Viewer{config: config.Object, prefix: prefix, confFilePath: config.Path, obfuscatedTags: config.ObfuscatedTags}
+	cfg := Viewer{config: objectCopy, prefix: prefix, confFilePath: config.Path, obfuscatedTags: config.ObfuscatedTags}
 	err := cfg.start(config.ParseComments)
 
 	return &cfg, err
@@ -91,6 +94,7 @@ func New(config *Config, prefix string) (*Viewer, error) {
 // Start starts the Viewer control struct, parsing the environment variables
 func (v *Viewer) start(parseComments bool) error {
 	var err error
+
 	v.config, err = obfuscateTags(v.config, v.obfuscatedTags, "")
 	if err != nil {
 		return err

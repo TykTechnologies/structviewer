@@ -222,14 +222,12 @@ func parseEnvs(config interface{}, prefix, configField string, obfuscatedFields 
 				newEnv.setValue(field)
 				newEnv.Env = prefix + newEnv.key
 				newEnv.ConfigField = configField + newEnv.ConfigField
-				b := new(bool)
-				*b = false
-				newEnv.Obfuscated = b
+				newEnv.Obfuscated = getPointerBool(false)
+
 				if field.IsZero() {
 					for _, obfuscatedField := range obfuscatedFields {
 						if strings.EqualFold(newEnv.ConfigField, obfuscatedField) {
-							*b = true
-							newEnv.Obfuscated = b
+							newEnv.Obfuscated = getPointerBool(true)
 							break
 						}
 					}
@@ -242,6 +240,7 @@ func parseEnvs(config interface{}, prefix, configField string, obfuscatedFields 
 
 	return envs
 }
+
 func obfuscateTags(config interface{}, obfuscatedTags []string, parentSuffix string) (interface{}, error) {
 	val := reflect.ValueOf(config)
 	if val.Kind() == reflect.Ptr {
@@ -269,6 +268,7 @@ func obfuscateTags(config interface{}, obfuscatedTags []string, parentSuffix str
 				if err != nil {
 					return nil, err
 				}
+
 				fieldValue.Set(reflect.ValueOf(newStruct).Elem())
 			}
 		} else {
@@ -307,7 +307,8 @@ type EnvVar struct {
 	// Value represents the value of the given struct fields.
 	Value interface{} `json:"value"`
 	// Obfuscated represents whether the given struct field is obfuscated or not.
-	// This is a pointer to a boolean value to distinguish between the zero value and the actual value (because of the 'omitempty' tag).
+	// This is a pointer to a boolean value to distinguish between the zero value
+	// and the actual value (because of the 'omitempty' tag).
 	Obfuscated *bool `json:"obfuscated,omitempty"`
 }
 

@@ -315,6 +315,7 @@ func TestJSONNotation(t *testing.T) {
 		assert.Equal(t, tc.expectedComment, envVar.Description, "failed to parse comments of %s", tc.envNotation)
 	}
 }
+
 func getTestStruct() *testStruct {
 	return &testStruct{
 		Exported:    "val1",
@@ -338,8 +339,8 @@ func getTestStruct() *testStruct {
 		},
 	}
 }
-func TestObfuscateTags(t *testing.T) {
 
+func TestObfuscateTags(t *testing.T) {
 	tests := []struct {
 		name           string
 		obfuscatedTags []string
@@ -400,6 +401,7 @@ func TestObfuscateTags(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var config interface{}
 			ts := getTestStruct()
+
 			if tt.wantErr {
 				config = *ts
 			} else {
@@ -411,6 +413,7 @@ func TestObfuscateTags(t *testing.T) {
 				t.Errorf("obfuscateTags() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("obfuscateTags() = %v, want %v", got, tt.want)
 			}
