@@ -34,6 +34,8 @@ var (
 	ErrInvalidObjectType = errors.New("invalid object type")
 )
 
+const StructViewerTag = "structviewer"
+
 // Config represents configuration structure.
 type Config struct {
 	// Object represents the config struct that is going to be parsed.
@@ -59,8 +61,9 @@ func New(config *Config, prefix string) (*Viewer, error) {
 	}
 
 	objectValue := reflect.ValueOf(config.Object)
-	if objectValue.Kind() != reflect.Struct &&
-		!(objectValue.Kind() == reflect.Ptr && objectValue.Elem().Kind() == reflect.Struct) {
+
+	kind := objectValue.Kind()
+	if kind != reflect.Struct && !(kind == reflect.Ptr && objectValue.Elem().Kind() == reflect.Struct) {
 		return nil, ErrInvalidObjectType
 	}
 

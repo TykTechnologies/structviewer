@@ -224,7 +224,7 @@ func parseEnvs(config interface{}, prefix, configField string) []*EnvVar {
 				newEnv.ConfigField = configField + newEnv.ConfigField
 				newEnv.Obfuscated = getPointerBool(false)
 
-				if field.IsZero() && field.Tag("structviewer") == "obfuscate" {
+				if field.IsZero() && field.Tag(StructViewerTag) == "obfuscate" {
 					newEnv.Obfuscated = getPointerBool(true)
 				}
 			}
@@ -256,7 +256,7 @@ func obfuscateTags(config interface{}) (interface{}, error) {
 			continue
 		}
 
-		svTag := field.Tag.Get("structviewer")
+		svTag := field.Tag.Get(StructViewerTag)
 		if fieldValue.Kind() == reflect.Struct {
 			if strings.EqualFold(svTag, "obfuscate") {
 				zeroValue := reflect.Zero(fieldValue.Type())
