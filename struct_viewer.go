@@ -23,8 +23,6 @@ type Viewer struct {
 	configMap map[string]*EnvVar
 	// file is the ast.File of the configuration structure.
 	file *ast.File
-	// obfuscatedTags is the list of JSON tags that should be obfuscated.
-	obfuscatedTags []string
 }
 
 var (
@@ -38,7 +36,7 @@ var (
 
 // Config represents configuration structure.
 type Config struct {
-	// Object represents an object that is going to be parsed.
+	// Object represents the config struct that is going to be parsed.
 	Object interface{}
 
 	// ParseComments decides parsing comments of given Object or not. If it is set to false,
@@ -48,10 +46,6 @@ type Config struct {
 	// Path is the file path of the Object. Needed for comment parser.
 	// Default value is "./config.go".
 	Path string
-
-	// ObfuscatedTags is the list of JSON tags that should be obfuscated.
-	// If the JSON tag of a field is in this list, the field value will be defaulted to its zero value.
-	ObfuscatedTags []string
 }
 
 // New receives a configuration structure and a prefix and returns a Viewer struct to manipulate this library.
@@ -85,7 +79,7 @@ func New(config *Config, prefix string) (*Viewer, error) {
 		config.Path = "./config.go"
 	}
 
-	cfg := Viewer{config: objectCopy, prefix: prefix, confFilePath: config.Path, obfuscatedTags: config.ObfuscatedTags}
+	cfg := Viewer{config: objectCopy, prefix: prefix, confFilePath: config.Path}
 	err := cfg.start(config.ParseComments)
 
 	return &cfg, err
@@ -95,12 +89,12 @@ func New(config *Config, prefix string) (*Viewer, error) {
 func (v *Viewer) start(parseComments bool) error {
 	var err error
 
-	v.config, err = obfuscateTags(v.config, v.obfuscatedTags, "")
+	v.config, err = obfuscateTags(v.config)
 	if err != nil {
 		return err
 	}
 
-	v.envs = parseEnvs(v.config, v.prefix, "", v.obfuscatedTags)
+	v.envs = parseEnvs(v.config, v.prefix, "")
 	if parseComments {
 		if err = v.parseComments(); err != nil {
 			return err

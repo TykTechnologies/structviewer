@@ -17,7 +17,7 @@ func (v *Viewer) ParseEnvs() []string {
 	envVars := v.envs
 
 	if len(envVars) == 0 {
-		envVars = parseEnvs(v.config, v.prefix, "", []string{})
+		envVars = parseEnvs(v.config, v.prefix, "")
 	}
 
 	for i := range envVars {
@@ -191,7 +191,7 @@ func (v *Viewer) get(field string, envs []*EnvVar) *EnvVar {
 	return nil
 }
 
-func parseEnvs(config interface{}, prefix, configField string, obfuscatedFields []string) []*EnvVar {
+func parseEnvs(config interface{}, prefix, configField string) []*EnvVar {
 	var envs []*EnvVar
 
 	s := structs.New(config)
@@ -207,7 +207,7 @@ func parseEnvs(config interface{}, prefix, configField string, obfuscatedFields 
 			}
 
 			if structs.IsStruct(field.Value()) {
-				envsInner := parseEnvs(field.Value(), prefix+newEnv.key+"_", configField+newEnv.ConfigField, obfuscatedFields)
+				envsInner := parseEnvs(field.Value(), prefix+newEnv.key+"_", configField+newEnv.ConfigField)
 				kvEnvVar := map[string]*EnvVar{}
 				for i := range envsInner {
 					kvEnvVar[envsInner[i].field] = envsInner[i]
@@ -224,24 +224,19 @@ func parseEnvs(config interface{}, prefix, configField string, obfuscatedFields 
 				newEnv.ConfigField = configField + newEnv.ConfigField
 				newEnv.Obfuscated = getPointerBool(false)
 
-				if field.IsZero() {
-					for _, obfuscatedField := range obfuscatedFields {
-						if strings.EqualFold(newEnv.ConfigField, obfuscatedField) {
-							newEnv.Obfuscated = getPointerBool(true)
-							break
-						}
-					}
+				if field.IsZero() && field.Tag("structviewer") == "obfuscate" {
+					newEnv.Obfuscated = getPointerBool(true)
 				}
-
-				envs = append(envs, newEnv)
 			}
+
+			envs = append(envs, newEnv)
 		}
 	}
 
 	return envs
 }
 
-func obfuscateTags(config interface{}, obfuscatedTags []string, parentSuffix string) (interface{}, error) {
+func obfuscateTags(config interface{}) (interface{}, error) {
 	val := reflect.ValueOf(config)
 	if val.Kind() == reflect.Ptr {
 		val = val.Elem()
@@ -261,10 +256,13 @@ func obfuscateTags(config interface{}, obfuscatedTags []string, parentSuffix str
 			continue
 		}
 
-		jsonTag := field.Tag.Get("json")
+		svTag := field.Tag.Get("structviewer")
 		if fieldValue.Kind() == reflect.Struct {
-			if jsonTag != "" {
-				newStruct, err := obfuscateTags(fieldValue.Addr().Interface(), obfuscatedTags, parentSuffix+jsonTag+".")
+			if strings.EqualFold(svTag, "obfuscate") {
+				zeroValue := reflect.Zero(fieldValue.Type())
+				fieldValue.Set(zeroValue)
+			} else {
+				newStruct, err := obfuscateTags(fieldValue.Addr().Interface())
 				if err != nil {
 					return nil, err
 				}
@@ -272,11 +270,9 @@ func obfuscateTags(config interface{}, obfuscatedTags []string, parentSuffix str
 				fieldValue.Set(reflect.ValueOf(newStruct).Elem())
 			}
 		} else {
-			for _, tag := range obfuscatedTags {
-				if strings.EqualFold(parentSuffix+jsonTag, tag) {
-					zeroValue := reflect.Zero(fieldValue.Type())
-					fieldValue.Set(zeroValue)
-				}
+			if strings.EqualFold(svTag, "obfuscate") {
+				zeroValue := reflect.Zero(fieldValue.Type())
+				fieldValue.Set(zeroValue)
 			}
 		}
 	}

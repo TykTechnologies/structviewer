@@ -41,7 +41,7 @@ type testStruct struct {
 	ST StructType `json:"st"`
 
 	// JSONExported includes a JSON tag.
-	JSONExported int `json:"json_exported"`
+	JSONExported int `json:"json_exported" structviewer:"obfuscate"`
 }
 
 func main() {
@@ -58,10 +58,6 @@ func main() {
 		},
 		Path:          "./main.go",
 		ParseComments: true,
-		ObfuscatedTags: []string{
-			"exported",
-			"st.inner.dummy_addr",
-		},
 	}
 
 	// prefix is added to each env var

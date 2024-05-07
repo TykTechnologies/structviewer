@@ -157,7 +157,7 @@ func TestParseEnvsLen(t *testing.T) {
 
 	envs := helper.ParseEnvs()
 
-	assert.Len(t, envs, 4)
+	assert.Len(t, envs, 6)
 }
 
 func TestParseEnvsPrefix(t *testing.T) {
@@ -316,99 +316,116 @@ func TestJSONNotation(t *testing.T) {
 	}
 }
 
-func getTestStruct() *testStruct {
-	return &testStruct{
-		Exported:    "val1",
-		notExported: true,
-		StrField: struct {
-			Test  string `json:"test"`
-			Other struct {
-				OtherTest   bool `json:"other_test"`
-				nonEmbedded string
-			}
-		}{Test: "original test", Other: struct {
-			OtherTest   bool `json:"other_test"`
-			nonEmbedded string
-		}{OtherTest: true, nonEmbedded: "nonVisible"}},
-		JSONExported: 5,
-		ST: StructType{
-			Enable: true,
-			Inner: InnerStructType{
-				DummyAddr: "dummy",
-			},
-		},
-	}
-}
-
 func TestObfuscateTags(t *testing.T) {
 	tests := []struct {
-		name           string
-		obfuscatedTags []string
-		want           interface{}
-		wantErr        bool
+		name    string
+		given   interface{}
+		want    interface{}
+		wantErr bool
 	}{
 		{
-			name:           "obfuscate single exported field",
-			obfuscatedTags: []string{"exported"},
-			want: func() interface{} {
-				ts := getTestStruct()
-				ts.Exported = ""
-				return ts
-			}(),
+			name: "obfuscate single exported field",
+			given: &struct {
+				Exported string `json:"exported" structviewer:"obfuscate"`
+				Test     int    `json:"test"`
+			}{
+				Exported: "value",
+				Test:     10,
+			},
+			want: &struct {
+				Exported string `json:"exported" structviewer:"obfuscate"`
+				Test     int    `json:"test"`
+			}{
+				Exported: "",
+				Test:     10,
+			},
 			wantErr: false,
 		},
 		{
 			name: "obfuscate nested field",
-			obfuscatedTags: []string{
-				"st.inner.dummy_addr",
+			given: &struct {
+				Exported string `json:"exported"`
+				Inner    struct {
+					InnerField string `json:"inner_field" structviewer:"obfuscate"`
+					NotObf     string `json:"not_obf"`
+				} `json:"inner"`
+			}{
+				Exported: "value",
+				Inner: struct {
+					InnerField string `json:"inner_field" structviewer:"obfuscate"`
+					NotObf     string `json:"not_obf"`
+				}{
+					InnerField: "inner",
+					NotObf:     "not obfuscated",
+				},
 			},
-			want: func() interface{} {
-				ts := getTestStruct()
-				ts.ST.Inner.DummyAddr = ""
-				return ts
-			}(),
+			want: &struct {
+				Exported string `json:"exported"`
+				Inner    struct {
+					InnerField string `json:"inner_field" structviewer:"obfuscate"`
+					NotObf     string `json:"not_obf"`
+				} `json:"inner"`
+			}{
+				Exported: "value",
+				Inner: struct {
+					InnerField string `json:"inner_field" structviewer:"obfuscate"`
+					NotObf     string `json:"not_obf"`
+				}{
+					InnerField: "",
+					NotObf:     "not obfuscated",
+				},
+			},
 			wantErr: false,
 		},
 		{
 			name: "obfuscate deep nested field and top level",
-			obfuscatedTags: []string{
-				"st.enable",
-				"json_exported",
+
+			given: &struct {
+				Exported string `json:"exported" structviewer:"obfuscate"`
+				Inner    struct {
+					InnerField string `json:"inner_field" structviewer:"obfuscate"`
+					NotObf     string `json:"not_obf"`
+				} `json:"inner"`
+			}{
+				Exported: "value",
+				Inner: struct {
+					InnerField string `json:"inner_field" structviewer:"obfuscate"`
+					NotObf     string `json:"not_obf"`
+				}{
+					InnerField: "inner",
+					NotObf:     "not obfuscated",
+				},
 			},
-			want: func() interface{} {
-				ts := getTestStruct()
-				ts.ST.Enable = false
-				ts.JSONExported = 0
-				return ts
-			}(),
+			want: &struct {
+				Exported string `json:"exported" structviewer:"obfuscate"`
+				Inner    struct {
+					InnerField string `json:"inner_field" structviewer:"obfuscate"`
+					NotObf     string `json:"not_obf"`
+				} `json:"inner"`
+			}{
+				Exported: "",
+				Inner: struct {
+					InnerField string `json:"inner_field" structviewer:"obfuscate"`
+					NotObf     string `json:"not_obf"`
+				}{
+					InnerField: "",
+					NotObf:     "not obfuscated",
+				},
+			},
 			wantErr: false,
 		},
 		{
-			name:           "Handle missing tag gracefully",
-			obfuscatedTags: []string{"nonexistent"},
-			want:           getTestStruct(),
-			wantErr:        false,
-		},
-		{
-			name:           "Handle error when config is not pointer",
-			obfuscatedTags: []string{"exported"},
-			want:           nil,
-			wantErr:        true,
+			name:    "Handle error when config is not pointer",
+			given:   struct{}{},
+			want:    nil,
+			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var config interface{}
-			ts := getTestStruct()
+			got, err := obfuscateTags(tt.given)
 
-			if tt.wantErr {
-				config = *ts
-			} else {
-				config = ts
-			}
-
-			got, err := obfuscateTags(config, tt.obfuscatedTags, "")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("obfuscateTags() error = %v, wantErr %v", err, tt.wantErr)
 				return
