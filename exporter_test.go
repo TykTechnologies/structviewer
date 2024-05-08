@@ -158,6 +158,7 @@ func TestDetailedConfigHandler(t *testing.T) {
 					"config_field": "field_name",
 					"env":          "TYK_FIELDNAME",
 					"value":        "field_value",
+					"obfuscated":   false,
 				},
 			}),
 		},
@@ -176,6 +177,7 @@ func TestDetailedConfigHandler(t *testing.T) {
 				Env:         "TYK_NAME",
 				Value:       complexStruct.Name,
 				ConfigField: "name",
+				Obfuscated:  getPointerBool(false),
 			}),
 		},
 		{
@@ -187,6 +189,7 @@ func TestDetailedConfigHandler(t *testing.T) {
 				Env:         "TYK_DATA_OBJECT1",
 				Value:       strconv.Itoa(complexStruct.Data.Object1),
 				ConfigField: "data.object_1",
+				Obfuscated:  getPointerBool(false),
 			}),
 		},
 		{
@@ -198,7 +201,7 @@ func TestDetailedConfigHandler(t *testing.T) {
 		},
 		{
 			testName: "not initialized",
-			givenConfig: struct {
+			givenConfig: &struct {
 				Name string `json:"field_name"`
 			}{
 				"field_value",
@@ -299,6 +302,7 @@ func TestEnvsHandler(t *testing.T) {
 				Env:         "TYK_NAME",
 				Value:       complexStruct.Name,
 				ConfigField: "name",
+				Obfuscated:  getPointerBool(false),
 			}),
 		},
 		{
@@ -311,6 +315,7 @@ func TestEnvsHandler(t *testing.T) {
 				Env:         "TYK_DATA_OBJECT1",
 				Value:       strconv.Itoa(complexStruct.Data.Object1),
 				ConfigField: "data.object_1",
+				Obfuscated:  getPointerBool(false),
 			}),
 		},
 		{

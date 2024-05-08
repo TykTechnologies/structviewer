@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"reflect"
 	"strings"
 
 	"github.com/fatih/structs"
@@ -215,17 +216,68 @@ func parseEnvs(config interface{}, prefix, configField string) []*EnvVar {
 				newEnv.Value = kvEnvVar
 				newEnv.ConfigField = ""
 				newEnv.isStruct = true
+
 				envs = append(envs, newEnv)
 			} else {
 				newEnv.setValue(field)
 				newEnv.Env = prefix + newEnv.key
 				newEnv.ConfigField = configField + newEnv.ConfigField
-				envs = append(envs, newEnv)
+				newEnv.Obfuscated = getPointerBool(false)
+
+				if field.IsZero() && field.Tag(StructViewerTag) == "obfuscate" {
+					newEnv.Obfuscated = getPointerBool(true)
+				}
 			}
+
+			envs = append(envs, newEnv)
 		}
 	}
 
 	return envs
+}
+
+func obfuscateTags(config interface{}) (interface{}, error) {
+	val := reflect.ValueOf(config)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+
+	if !val.CanAddr() {
+		return nil, fmt.Errorf("cannot address value")
+	}
+
+	typ := val.Type()
+
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+		fieldValue := val.Field(i)
+
+		if !fieldValue.CanSet() {
+			continue
+		}
+
+		svTag := field.Tag.Get(StructViewerTag)
+		if fieldValue.Kind() == reflect.Struct {
+			if strings.EqualFold(svTag, "obfuscate") {
+				zeroValue := reflect.Zero(fieldValue.Type())
+				fieldValue.Set(zeroValue)
+			} else {
+				newStruct, err := obfuscateTags(fieldValue.Addr().Interface())
+				if err != nil {
+					return nil, err
+				}
+
+				fieldValue.Set(reflect.ValueOf(newStruct).Elem())
+			}
+		} else {
+			if strings.EqualFold(svTag, "obfuscate") {
+				zeroValue := reflect.Zero(fieldValue.Type())
+				fieldValue.Set(zeroValue)
+			}
+		}
+	}
+
+	return config, nil
 }
 
 // EnvVar is a key:value string struct for environment variables representation
@@ -250,6 +302,10 @@ type EnvVar struct {
 	Description string `json:"description,omitempty"`
 	// Value represents the value of the given struct fields.
 	Value interface{} `json:"value"`
+	// Obfuscated represents whether the given struct field is obfuscated or not.
+	// This is a pointer to a boolean value to distinguish between the zero value
+	// and the actual value (because of the 'omitempty' tag).
+	Obfuscated *bool `json:"obfuscated,omitempty"`
 }
 
 // String returns a key:value string from EnvVar

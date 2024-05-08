@@ -3,8 +3,7 @@ package structviewer
 import (
 	"errors"
 	"go/ast"
-
-	"github.com/fatih/structs"
+	"reflect"
 )
 
 // Viewer is the pkg control structure where the prefix and env vars are stored.
@@ -35,9 +34,11 @@ var (
 	ErrInvalidObjectType = errors.New("invalid object type")
 )
 
+const StructViewerTag = "structviewer"
+
 // Config represents configuration structure.
 type Config struct {
-	// Object represents an object that is going to be parsed.
+	// Object represents the config struct that is going to be parsed.
 	Object interface{}
 
 	// ParseComments decides parsing comments of given Object or not. If it is set to false,
@@ -59,15 +60,29 @@ func New(config *Config, prefix string) (*Viewer, error) {
 		return nil, ErrEmptyStruct
 	}
 
-	if !structs.IsStruct(config.Object) {
+	objectValue := reflect.ValueOf(config.Object)
+
+	kind := objectValue.Kind()
+	if kind != reflect.Struct && !(kind == reflect.Ptr && objectValue.Elem().Kind() == reflect.Struct) {
 		return nil, ErrInvalidObjectType
+	}
+
+	// The struct must be a pointer to be able to modify its fields if they need to be obfuscated
+	// To avoid modifying the original struct, we create a copy of it
+	var objectCopy interface{}
+	if objectValue.Kind() == reflect.Ptr {
+		objectCopy = reflect.New(objectValue.Elem().Type()).Interface()
+		reflect.ValueOf(objectCopy).Elem().Set(objectValue.Elem())
+	} else {
+		objectCopy = reflect.New(objectValue.Type()).Interface()
+		reflect.ValueOf(objectCopy).Elem().Set(objectValue)
 	}
 
 	if config.Path == "" {
 		config.Path = "./config.go"
 	}
 
-	cfg := Viewer{config: config.Object, prefix: prefix, confFilePath: config.Path}
+	cfg := Viewer{config: objectCopy, prefix: prefix, confFilePath: config.Path}
 	err := cfg.start(config.ParseComments)
 
 	return &cfg, err
@@ -75,9 +90,16 @@ func New(config *Config, prefix string) (*Viewer, error) {
 
 // Start starts the Viewer control struct, parsing the environment variables
 func (v *Viewer) start(parseComments bool) error {
+	var err error
+
+	v.config, err = obfuscateTags(v.config)
+	if err != nil {
+		return err
+	}
+
 	v.envs = parseEnvs(v.config, v.prefix, "")
 	if parseComments {
-		if err := v.parseComments(); err != nil {
+		if err = v.parseComments(); err != nil {
 			return err
 		}
 	}

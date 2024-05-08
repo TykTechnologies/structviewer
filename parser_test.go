@@ -2,6 +2,7 @@ package structviewer
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -156,7 +157,7 @@ func TestParseEnvsLen(t *testing.T) {
 
 	envs := helper.ParseEnvs()
 
-	assert.Len(t, envs, 4)
+	assert.Len(t, envs, 6)
 }
 
 func TestParseEnvsPrefix(t *testing.T) {
@@ -312,5 +313,127 @@ func TestJSONNotation(t *testing.T) {
 		envVar := tc.viewer.JSONNotation(tc.envNotation)
 		assert.Equal(t, tc.expectedJSON, envVar.ConfigField, "failed to get JSON notation of %s", tc.envNotation)
 		assert.Equal(t, tc.expectedComment, envVar.Description, "failed to parse comments of %s", tc.envNotation)
+	}
+}
+
+func TestObfuscateTags(t *testing.T) {
+	tests := []struct {
+		name    string
+		given   interface{}
+		want    interface{}
+		wantErr bool
+	}{
+		{
+			name: "obfuscate single exported field",
+			given: &struct {
+				Exported string `json:"exported" structviewer:"obfuscate"`
+				Test     int    `json:"test"`
+			}{
+				Exported: "value",
+				Test:     10,
+			},
+			want: &struct {
+				Exported string `json:"exported" structviewer:"obfuscate"`
+				Test     int    `json:"test"`
+			}{
+				Exported: "",
+				Test:     10,
+			},
+			wantErr: false,
+		},
+		{
+			name: "obfuscate nested field",
+			given: &struct {
+				Exported string `json:"exported"`
+				Inner    struct {
+					InnerField string `json:"inner_field" structviewer:"obfuscate"`
+					NotObf     string `json:"not_obf"`
+				} `json:"inner"`
+			}{
+				Exported: "value",
+				Inner: struct {
+					InnerField string `json:"inner_field" structviewer:"obfuscate"`
+					NotObf     string `json:"not_obf"`
+				}{
+					InnerField: "inner",
+					NotObf:     "not obfuscated",
+				},
+			},
+			want: &struct {
+				Exported string `json:"exported"`
+				Inner    struct {
+					InnerField string `json:"inner_field" structviewer:"obfuscate"`
+					NotObf     string `json:"not_obf"`
+				} `json:"inner"`
+			}{
+				Exported: "value",
+				Inner: struct {
+					InnerField string `json:"inner_field" structviewer:"obfuscate"`
+					NotObf     string `json:"not_obf"`
+				}{
+					InnerField: "",
+					NotObf:     "not obfuscated",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "obfuscate deep nested field and top level",
+
+			given: &struct {
+				Exported string `json:"exported" structviewer:"obfuscate"`
+				Inner    struct {
+					InnerField string `json:"inner_field" structviewer:"obfuscate"`
+					NotObf     string `json:"not_obf"`
+				} `json:"inner"`
+			}{
+				Exported: "value",
+				Inner: struct {
+					InnerField string `json:"inner_field" structviewer:"obfuscate"`
+					NotObf     string `json:"not_obf"`
+				}{
+					InnerField: "inner",
+					NotObf:     "not obfuscated",
+				},
+			},
+			want: &struct {
+				Exported string `json:"exported" structviewer:"obfuscate"`
+				Inner    struct {
+					InnerField string `json:"inner_field" structviewer:"obfuscate"`
+					NotObf     string `json:"not_obf"`
+				} `json:"inner"`
+			}{
+				Exported: "",
+				Inner: struct {
+					InnerField string `json:"inner_field" structviewer:"obfuscate"`
+					NotObf     string `json:"not_obf"`
+				}{
+					InnerField: "",
+					NotObf:     "not obfuscated",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:    "Handle error when config is not pointer",
+			given:   struct{}{},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := obfuscateTags(tt.given)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("obfuscateTags() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("obfuscateTags() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

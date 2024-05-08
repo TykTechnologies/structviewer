@@ -41,13 +41,20 @@ type testStruct struct {
 	ST StructType `json:"st"`
 
 	// JSONExported includes a JSON tag.
-	JSONExported int `json:"json_exported"`
+	JSONExported int `json:"json_exported" structviewer:"obfuscate"`
 }
 
 func main() {
 	config := &structviewer.Config{
 		Object: &testStruct{
 			Exported: "exported_value",
+			ST: StructType{
+				Enable: true,
+				Inner: InnerStructType{
+					DummyAddr: "dummy_addr_value",
+				},
+			},
+			JSONExported: 10,
 		},
 		Path:          "./main.go",
 		ParseComments: true,
