@@ -44,18 +44,41 @@ type testStruct struct {
 	JSONExported int `json:"json_exported" structviewer:"obfuscate"`
 }
 
+type complexType struct {
+	Data struct {
+		Object1 int  `json:"object_1,omitempty"`
+		Object2 bool `json:"object_2,omitempty"`
+	} `json:"data"`
+	Metadata map[string]struct {
+		ID    int    `json:"id,omitempty"`
+		Value string `json:"value,omitempty"`
+	} `json:"metadata,omitempty"`
+	Random map[int]string `json:"random,omitempty"`
+}
+
+var complexStruct = complexType{
+	Data: struct {
+		Object1 int  `json:"object_1,omitempty"`
+		Object2 bool `json:"object_2,omitempty"`
+	}{
+		Object1: 1,
+		Object2: true,
+	},
+	Metadata: map[string]struct {
+		ID    int    `json:"id,omitempty"`
+		Value string `json:"value,omitempty"`
+	}{
+		"key_99": {ID: 99, Value: "key99"},
+	},
+	Random: map[int]string{
+		1: "one",
+		2: "two",
+	},
+}
+
 func main() {
 	config := &structviewer.Config{
-		Object: &testStruct{
-			Exported: "exported_value",
-			ST: StructType{
-				Enable: true,
-				Inner: InnerStructType{
-					DummyAddr: "dummy_addr_value",
-				},
-			},
-			JSONExported: 10,
-		},
+		Object:        complexStruct,
 		Path:          "./main.go",
 		ParseComments: true,
 	}
