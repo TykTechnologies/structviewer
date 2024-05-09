@@ -89,7 +89,7 @@ func TestParseEnvsValues(t *testing.T) {
 				Key: "Value",
 			},
 			expectedLen:  1,
-			expectedEnvs: []string{"KEY:Value"},
+			expectedEnvs: []string{"KEY=Value"},
 		},
 		{
 			testName: "KEY:VALUE with json tag",
@@ -99,7 +99,7 @@ func TestParseEnvsValues(t *testing.T) {
 				Key: "Value",
 			},
 			expectedLen:  1,
-			expectedEnvs: []string{"JSONNAME:Value"},
+			expectedEnvs: []string{"JSONNAME=Value"},
 		},
 		{
 			testName: "KEY:VALUE with json tag and omitempty",
@@ -109,7 +109,7 @@ func TestParseEnvsValues(t *testing.T) {
 				Key: "Value",
 			},
 			expectedLen:  1,
-			expectedEnvs: []string{"JSONNAME:Value"},
+			expectedEnvs: []string{"JSONNAME=Value"},
 		},
 		{
 			testName: "KEY:VALUE with json '-' tag",
@@ -119,7 +119,7 @@ func TestParseEnvsValues(t *testing.T) {
 				Key: "Value",
 			},
 			expectedLen:  1,
-			expectedEnvs: []string{"KEY:Value"},
+			expectedEnvs: []string{"KEY=Value"},
 		},
 	}
 

@@ -14,18 +14,37 @@ import (
 // ParseEnvs parse Viewer config field, generating a string slice of prefix+key:value of each config field
 func (v *Viewer) ParseEnvs() []string {
 	var envs []string
-	envVars := v.envs
+	envVars := v.configMap
 
-	if len(envVars) == 0 {
-		envVars = parseEnvs(v.config, v.prefix, "")
-	}
-
-	for i := range envVars {
-		env := envVars[i]
-		envs = append(envs, v.prefix+env.String())
+	for _, envVar := range envVars {
+		envs = append(envs, generateEnvStrings(*envVar)...)
 	}
 
 	return envs
+}
+
+func generateEnvStrings(e EnvVar) []string {
+	var strEnvs []string
+	if e.isStruct {
+		typedEnv, ok := e.Value.(map[string]*EnvVar)
+		if !ok {
+			return []string{""}
+		}
+
+		for _, v := range typedEnv {
+			strEnvs = append(strEnvs, generateEnvStrings(*v)...)
+		}
+
+		return strEnvs
+	}
+
+	if e.Value == "" || e.Value == nil {
+		e.Value = `''`
+	}
+
+	strEnvs = append(strEnvs, fmt.Sprintf("%v=%v", e.Env, e.Value))
+
+	return strEnvs
 }
 
 // EnvNotation takes JSON notation of a configuration field (e.g, 'listen_port') and returns EnvVar object of the given
@@ -218,6 +237,29 @@ func parseEnvs(config interface{}, prefix, configField string) []*EnvVar {
 				newEnv.isStruct = true
 
 				envs = append(envs, newEnv)
+			} else if reflect.ValueOf(field.Value()).Kind() == reflect.Map {
+				v := reflect.ValueOf(field.Value())
+				keys := v.MapKeys()
+
+				kvEnvVar := map[string]*EnvVar{}
+				for _, key := range keys {
+					value := v.MapIndex(key).Interface()
+					if reflect.TypeOf(value).Kind() == reflect.Struct {
+						envsInner := parseEnvs(value, prefix+newEnv.key+"_", configField+newEnv.ConfigField)
+						for i := range envsInner {
+							kvEnvVar[envsInner[i].field] = envsInner[i]
+						}
+					}
+
+					// Here we have to add support for other types. parseEnvs only supports structs.
+
+				}
+
+				newEnv.Value = kvEnvVar
+				newEnv.ConfigField = ""
+				newEnv.isStruct = true
+
+				envs = append(envs, newEnv)
 			} else {
 				newEnv.setValue(field)
 				newEnv.Env = prefix + newEnv.key
@@ -310,7 +352,7 @@ type EnvVar struct {
 
 // String returns a key:value string from EnvVar
 func (ev EnvVar) String() string {
-	return fmt.Sprintf("%s:%s", ev.key, ev.Value)
+	return fmt.Sprintf("%s:%s", ev.Env, ev.Value)
 }
 
 func (ev *EnvVar) setKey(field *structs.Field) {

@@ -265,7 +265,7 @@ func TestEnvsHandler(t *testing.T) {
 				"field_value",
 			},
 			expectedStatusCode: http.StatusOK,
-			expectedJSONOutput: fmt.Sprintln(`["FIELDNAME:field_value"]`),
+			expectedJSONOutput: fmt.Sprintln(`["FIELDNAME=field_value"]`),
 		},
 		{
 			testName: "simple struct with prefix",
@@ -276,22 +276,22 @@ func TestEnvsHandler(t *testing.T) {
 			},
 			givenPrefix:        "TEST_",
 			expectedStatusCode: http.StatusOK,
-			expectedJSONOutput: fmt.Sprintln(`["TEST_FIELDNAME:field_value"]`),
+			expectedJSONOutput: fmt.Sprintln(`["TEST_FIELDNAME=field_value"]`),
 		},
 		// TODO: Uncomment this test once this issue is addressed:
 		// https://github.com/TykTechnologies/structviewer/issues/7
-		// {
-		// 	testName:           "complex struct struct",
-		// 	givenConfig:        complexStruct,
-		// 	expectedStatusCode: http.StatusOK,
-		// 	expectedJSONOutput: fmt.Sprintln(
-		// 		`["NAME:name_value",` +
-		// 			`"DATA_OBJECT1:1",` +
-		// 			`"DATA_OBJECT2:true",` +
-		// 			`"METADATA:map[key_99:{99 key99}]",` +
-		// 			`"OMITTEDVALUE:"]`,
-		// 	),
-		// },
+		{
+			testName:           "complex struct",
+			givenConfig:        complexStruct,
+			expectedStatusCode: http.StatusOK,
+			expectedJSONOutput: fmt.Sprintln(
+				`["NAME=name_value",` +
+					`"DATA_OBJECT1=1",` +
+					`"DATA_OBJECT2=true",` +
+					`"METADATA:map[key_99:{99 key99}]",` +
+					`"OMITTEDVALUE=''"]`,
+			),
+		},
 		{
 			testName:           "valid field of complexStruct via query param",
 			givenConfig:        complexStruct,
