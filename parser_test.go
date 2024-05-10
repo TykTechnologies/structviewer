@@ -121,6 +121,29 @@ func TestParseEnvsValues(t *testing.T) {
 			expectedLen:  1,
 			expectedEnvs: []string{"KEY=Value"},
 		},
+		{
+			testName: "struct with nested map and struct",
+			testStruct: struct {
+				Key string
+				Map map[string]string
+				Str struct {
+					Inner string
+				}
+			}{
+				Key: "Value",
+				Map: map[string]string{
+					"key1": "value1",
+					"key2": "value2",
+				},
+				Str: struct {
+					Inner string
+				}{
+					Inner: "inner",
+				},
+			},
+			expectedLen:  4,
+			expectedEnvs: []string{"KEY=Value", "MAP_KEY1=value1", "MAP_KEY2=value2", "STR_INNER=inner"},
+		},
 	}
 
 	for _, tc := range tcs {
@@ -132,7 +155,8 @@ func TestParseEnvsValues(t *testing.T) {
 			envs := helper.ParseEnvs()
 
 			assert.Len(t, envs, tc.expectedLen)
-			assert.EqualValues(t, tc.expectedEnvs, envs)
+			// Compare arrays disregarding the order
+			assert.ElementsMatch(t, tc.expectedEnvs, envs)
 		})
 	}
 }

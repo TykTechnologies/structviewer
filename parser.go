@@ -17,14 +17,15 @@ func (v *Viewer) ParseEnvs() []string {
 	envVars := v.configMap
 
 	for _, envVar := range envVars {
-		envs = append(envs, generateEnvStrings(*envVar)...)
+		envs = append(envs, generateEnvStrings(envVar)...)
 	}
 
 	return envs
 }
 
-func generateEnvStrings(e EnvVar) []string {
+func generateEnvStrings(e *EnvVar) []string {
 	var strEnvs []string
+
 	if e.isStruct {
 		typedEnv, ok := e.Value.(map[string]*EnvVar)
 		if !ok {
@@ -32,7 +33,7 @@ func generateEnvStrings(e EnvVar) []string {
 		}
 
 		for _, v := range typedEnv {
-			strEnvs = append(strEnvs, generateEnvStrings(*v)...)
+			strEnvs = append(strEnvs, generateEnvStrings(v)...)
 		}
 
 		return strEnvs
@@ -209,7 +210,6 @@ func (v *Viewer) get(field string, envs []*EnvVar) *EnvVar {
 
 	return nil
 }
-
 func parseEnvs(config interface{}, prefix, configField string) []*EnvVar {
 	var envs []*EnvVar
 
@@ -220,7 +220,7 @@ func parseEnvs(config interface{}, prefix, configField string) []*EnvVar {
 			newEnv := &EnvVar{}
 			newEnv.setKey(field)
 
-			// Ensuring that the configField ends with a single dot (only if it is not empty)
+			// Ensure that the configField ends with a single dot (only if it is not empty)
 			if configField != "" && configField[len(configField)-1] != '.' {
 				configField += "."
 			}
@@ -242,17 +242,33 @@ func parseEnvs(config interface{}, prefix, configField string) []*EnvVar {
 				keys := v.MapKeys()
 
 				kvEnvVar := map[string]*EnvVar{}
+
 				for _, key := range keys {
 					value := v.MapIndex(key).Interface()
+
+					// Handle different key types by converting to a string representation
+					keyStr := fmt.Sprintf("%v", key)
+					mapEnv := &EnvVar{
+						key:   keyStr,
+						field: keyStr,
+					}
+
 					if reflect.TypeOf(value).Kind() == reflect.Struct {
+						// Recursively process structs
 						envsInner := parseEnvs(value, prefix+newEnv.key+"_", configField+newEnv.ConfigField)
 						for i := range envsInner {
 							kvEnvVar[envsInner[i].field] = envsInner[i]
 						}
+					} else {
+						// Directly assign other map values to `mapEnv`
+						mapEnv.Value = value
+						envSuffix := strings.ToUpper(strings.ReplaceAll(keyStr, "_", ""))
+						mapEnv.Env = prefix + newEnv.key + "_" + envSuffix
+						mapEnv.ConfigField = configField + newEnv.ConfigField + "." + keyStr
+						mapEnv.Obfuscated = getPointerBool(false)
+
+						kvEnvVar[keyStr] = mapEnv
 					}
-
-					// Here we have to add support for other types. parseEnvs only supports structs.
-
 				}
 
 				newEnv.Value = kvEnvVar
@@ -261,6 +277,7 @@ func parseEnvs(config interface{}, prefix, configField string) []*EnvVar {
 
 				envs = append(envs, newEnv)
 			} else {
+				// Use the existing `setValue` function to assign the value
 				newEnv.setValue(field)
 				newEnv.Env = prefix + newEnv.key
 				newEnv.ConfigField = configField + newEnv.ConfigField
@@ -269,9 +286,9 @@ func parseEnvs(config interface{}, prefix, configField string) []*EnvVar {
 				if field.IsZero() && field.Tag(StructViewerTag) == "obfuscate" {
 					newEnv.Obfuscated = getPointerBool(true)
 				}
-			}
 
-			envs = append(envs, newEnv)
+				envs = append(envs, newEnv)
+			}
 		}
 	}
 

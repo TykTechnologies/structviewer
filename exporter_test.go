@@ -249,8 +249,7 @@ func TestDetailedConfigHandler(t *testing.T) {
 
 func TestEnvsHandler(t *testing.T) {
 	tcs := []struct {
-		testName string
-
+		testName           string
 		givenConfig        interface{}
 		givenPrefix        string
 		queryParamVal      string
@@ -278,8 +277,6 @@ func TestEnvsHandler(t *testing.T) {
 			expectedStatusCode: http.StatusOK,
 			expectedJSONOutput: fmt.Sprintln(`["TEST_FIELDNAME=field_value"]`),
 		},
-		// TODO: Uncomment this test once this issue is addressed:
-		// https://github.com/TykTechnologies/structviewer/issues/7
 		{
 			testName:           "complex struct",
 			givenConfig:        complexStruct,
@@ -288,7 +285,8 @@ func TestEnvsHandler(t *testing.T) {
 				`["NAME=name_value",` +
 					`"DATA_OBJECT1=1",` +
 					`"DATA_OBJECT2=true",` +
-					`"METADATA:map[key_99:{99 key99}]",` +
+					`"METADATA_ID=99",` +
+					`"METADATA_VALUE=key99",` +
 					`"OMITTEDVALUE=''"]`,
 			),
 		},
@@ -330,8 +328,6 @@ func TestEnvsHandler(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.testName, func(t *testing.T) {
-			// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
-			// pass 'nil' as the third parameter.
 			req, err := http.NewRequest("GET", "/", nil)
 			assert.NoError(t, err)
 
@@ -341,19 +337,25 @@ func TestEnvsHandler(t *testing.T) {
 			helper, err := New(&structViewerConfig, tc.givenPrefix)
 			assert.NoError(t, err, "failed to instantiate viewer")
 
-			// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
 			rr := httptest.NewRecorder()
 			handler := http.HandlerFunc(helper.EnvsHandler)
 
-			// Our handlers satisfy http.Handler, so we can call their ServeHTTP method
-			// directly and pass in our Request and ResponseRecorder.
 			handler.ServeHTTP(rr, req)
 
-			// Check the status code is what we expect.
 			assert.Equal(t, tc.expectedStatusCode, rr.Code)
 
-			// Check the response body is what we expect.
-			assert.JSONEq(t, tc.expectedJSONOutput, rr.Body.String())
+			// Determine whether the expected output is an array by trying to unmarshal it into a slice
+			var expectedArray, actualArray []string
+			expectedArrayErr := json.Unmarshal([]byte(tc.expectedJSONOutput), &expectedArray)
+			actualArrayErr := json.Unmarshal(rr.Body.Bytes(), &actualArray)
+
+			if expectedArrayErr == nil && actualArrayErr == nil {
+				// Both JSON strings are arrays; compare using unordered comparison
+				assert.ElementsMatch(t, expectedArray, actualArray)
+			} else {
+				// Not arrays, compare as ordered JSON strings
+				assert.JSONEq(t, tc.expectedJSONOutput, rr.Body.String())
+			}
 		})
 	}
 }
