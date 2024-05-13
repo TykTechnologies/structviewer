@@ -58,7 +58,7 @@ func (v *Viewer) DetailedConfigHandler(rw http.ResponseWriter, r *http.Request) 
 
 // EnvsHandler expose the environment variables of the configuration struct
 func (v *Viewer) EnvsHandler(rw http.ResponseWriter, r *http.Request) {
-	if v.config == nil {
+	if v.envs == nil {
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
