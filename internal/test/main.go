@@ -14,9 +14,10 @@ type complexType struct {
 	} `json:"data"`
 	Metadata map[string]struct {
 		ID    int    `json:"id,omitempty"`
-		Value string `json:"value,omitempty"`
+		Value string `json:"value,omitempty" structviewer:"obfuscate"`
 	} `json:"metadata,omitempty"`
 	Random map[int]string `json:"random,omitempty"`
+	Test   string         `json:"test" structviewer:"obfuscate"`
 }
 
 var complexStruct = complexType{
@@ -29,7 +30,7 @@ var complexStruct = complexType{
 	},
 	Metadata: map[string]struct {
 		ID    int    `json:"id,omitempty"`
-		Value string `json:"value,omitempty"`
+		Value string `json:"value,omitempty" structviewer:"obfuscate"`
 	}{
 		"key_99": {ID: 99, Value: "key99"},
 	},
@@ -37,6 +38,7 @@ var complexStruct = complexType{
 		1: "one",
 		2: "two",
 	},
+	Test: "test",
 }
 
 func main() {

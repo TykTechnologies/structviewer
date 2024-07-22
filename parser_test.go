@@ -360,7 +360,7 @@ func TestObfuscateTags(t *testing.T) {
 				Exported string `json:"exported" structviewer:"obfuscate"`
 				Test     int    `json:"test"`
 			}{
-				Exported: "",
+				Exported: "*REDACTED*",
 				Test:     10,
 			},
 			wantErr: false,
@@ -395,7 +395,7 @@ func TestObfuscateTags(t *testing.T) {
 					InnerField string `json:"inner_field" structviewer:"obfuscate"`
 					NotObf     string `json:"not_obf"`
 				}{
-					InnerField: "",
+					InnerField: "*REDACTED*",
 					NotObf:     "not obfuscated",
 				},
 			},
@@ -427,12 +427,12 @@ func TestObfuscateTags(t *testing.T) {
 					NotObf     string `json:"not_obf"`
 				} `json:"inner"`
 			}{
-				Exported: "",
+				Exported: "*REDACTED*",
 				Inner: struct {
 					InnerField string `json:"inner_field" structviewer:"obfuscate"`
 					NotObf     string `json:"not_obf"`
 				}{
-					InnerField: "",
+					InnerField: "*REDACTED*",
 					NotObf:     "not obfuscated",
 				},
 			},

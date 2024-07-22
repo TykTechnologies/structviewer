@@ -294,7 +294,6 @@ func parseEnvs(config interface{}, prefix, configField string) []*EnvVar {
 
 	return envs
 }
-
 func obfuscateTags(config interface{}) (interface{}, error) {
 	val := reflect.ValueOf(config)
 	if val.Kind() == reflect.Ptr {
@@ -328,10 +327,59 @@ func obfuscateTags(config interface{}) (interface{}, error) {
 
 				fieldValue.Set(reflect.ValueOf(newStruct).Elem())
 			}
-		} else {
+		} else if fieldValue.Kind() == reflect.Map {
 			if strings.EqualFold(svTag, "obfuscate") {
 				zeroValue := reflect.Zero(fieldValue.Type())
 				fieldValue.Set(zeroValue)
+			} else {
+				newMap := reflect.MakeMap(fieldValue.Type())
+				keys := fieldValue.MapKeys()
+
+				for _, key := range keys {
+					mapValue := fieldValue.MapIndex(key)
+					if !mapValue.IsValid() {
+						continue
+					}
+
+					var newValue reflect.Value
+
+					switch mapValue.Kind() {
+					case reflect.Ptr, reflect.Interface:
+						elemValue := mapValue.Elem()
+						if elemValue.Kind() == reflect.Struct {
+							newStruct, err := obfuscateTags(elemValue.Addr().Interface())
+							if err != nil {
+								return nil, err
+							}
+							newValue = reflect.ValueOf(newStruct).Elem()
+						} else {
+							newValue = mapValue
+						}
+					case reflect.Struct:
+						ptrToStruct := reflect.New(mapValue.Type())
+						ptrToStruct.Elem().Set(mapValue)
+						newStruct, err := obfuscateTags(ptrToStruct.Interface())
+						if err != nil {
+							return nil, err
+						}
+						newValue = reflect.ValueOf(newStruct).Elem()
+					default:
+						newValue = mapValue
+					}
+
+					newMap.SetMapIndex(key, newValue)
+				}
+
+				fieldValue.Set(newMap)
+			}
+		} else {
+			if strings.EqualFold(svTag, "obfuscate") {
+				if fieldValue.Kind() == reflect.String {
+					fieldValue.SetString("*REDACTED*")
+				} else {
+					zeroValue := reflect.Zero(fieldValue.Type())
+					fieldValue.Set(zeroValue)
+				}
 			}
 		}
 	}
