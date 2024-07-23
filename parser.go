@@ -210,90 +210,144 @@ func (v *Viewer) get(field string, envs []*EnvVar) *EnvVar {
 
 	return nil
 }
+
 func parseEnvs(config interface{}, prefix, configField string) []*EnvVar {
 	var envs []*EnvVar
-
 	s := structs.New(config)
 
 	for _, field := range s.Fields() {
-		if field.IsExported() {
-			newEnv := &EnvVar{}
-			newEnv.setKey(field)
+		if !field.IsExported() {
+			continue
+		}
 
-			// Ensure that the configField ends with a single dot (only if it is not empty)
-			if configField != "" && configField[len(configField)-1] != '.' {
-				configField += "."
-			}
+		newEnv := createEnvVar(field)
+		configField = ensureConfigFieldEndsWithDot(configField)
 
-			if structs.IsStruct(field.Value()) {
-				envsInner := parseEnvs(field.Value(), prefix+newEnv.key+"_", configField+newEnv.ConfigField)
-				kvEnvVar := map[string]*EnvVar{}
-				for i := range envsInner {
-					kvEnvVar[envsInner[i].field] = envsInner[i]
-				}
-
-				newEnv.Value = kvEnvVar
-				newEnv.ConfigField = ""
-				newEnv.isStruct = true
-
-				envs = append(envs, newEnv)
-			} else if reflect.ValueOf(field.Value()).Kind() == reflect.Map {
-				v := reflect.ValueOf(field.Value())
-				keys := v.MapKeys()
-
-				kvEnvVar := map[string]*EnvVar{}
-
-				for _, key := range keys {
-					value := v.MapIndex(key).Interface()
-
-					// Handle different key types by converting to a string representation
-					keyStr := fmt.Sprintf("%v", key)
-					mapEnv := &EnvVar{
-						key:   keyStr,
-						field: keyStr,
-					}
-
-					if reflect.TypeOf(value).Kind() == reflect.Struct {
-						// Recursively process structs
-						envsInner := parseEnvs(value, prefix+newEnv.key+"_", configField+newEnv.ConfigField)
-						for i := range envsInner {
-							kvEnvVar[envsInner[i].field] = envsInner[i]
-						}
-					} else {
-						// Directly assign other map values to `mapEnv`
-						mapEnv.Value = value
-						envSuffix := strings.ToUpper(strings.ReplaceAll(keyStr, "_", ""))
-						mapEnv.Env = prefix + newEnv.key + "_" + envSuffix
-						mapEnv.ConfigField = configField + newEnv.ConfigField + "." + keyStr
-						mapEnv.Obfuscated = getPointerBool(false)
-
-						kvEnvVar[keyStr] = mapEnv
-					}
-				}
-
-				newEnv.Value = kvEnvVar
-				newEnv.ConfigField = ""
-				newEnv.isStruct = true
-
-				envs = append(envs, newEnv)
-			} else {
-				// Use the existing `setValue` function to assign the value
-				newEnv.setValue(field)
-				newEnv.Env = prefix + newEnv.key
-				newEnv.ConfigField = configField + newEnv.ConfigField
-				newEnv.Obfuscated = getPointerBool(false)
-
-				if field.IsZero() && field.Tag(StructViewerTag) == "obfuscate" {
-					newEnv.Obfuscated = getPointerBool(true)
-				}
-
-				envs = append(envs, newEnv)
-			}
+		switch {
+		case structs.IsStruct(field.Value()):
+			handleStructField(newEnv, field, prefix, configField, &envs)
+		case reflect.ValueOf(field.Value()).Kind() == reflect.Map:
+			handleMapField(newEnv, field, prefix, configField, &envs)
+		default:
+			handleSimpleField(newEnv, field, prefix, configField, &envs)
 		}
 	}
 
 	return envs
 }
+
+func createEnvVar(field *structs.Field) *EnvVar {
+	newEnv := &EnvVar{}
+	newEnv.setKey(field)
+
+	return newEnv
+}
+
+func ensureConfigFieldEndsWithDot(configField string) string {
+	if configField != "" && configField[len(configField)-1] != '.' {
+		return configField + "."
+	}
+
+	return configField
+}
+
+func handleStructField(newEnv *EnvVar, field *structs.Field, prefix, configField string, envs *[]*EnvVar) {
+	envsInner := parseEnvs(field.Value(), prefix+newEnv.key+"_", configField+newEnv.ConfigField)
+	kvEnvVar := makeKVEnvVar(envsInner)
+
+	newEnv.Value = kvEnvVar
+	newEnv.ConfigField = ""
+	newEnv.isStruct = true
+
+	*envs = append(*envs, newEnv)
+}
+
+func handleMapField(newEnv *EnvVar, field *structs.Field, prefix, configField string, envs *[]*EnvVar) {
+	v := reflect.ValueOf(field.Value())
+	keys := v.MapKeys()
+	kvEnvVar := make(map[string]*EnvVar)
+
+	for _, key := range keys {
+		value := v.MapIndex(key)
+		keyStr := fmt.Sprintf("%v", key)
+		mapEnv := &EnvVar{key: keyStr, field: keyStr}
+
+		if value.Kind() == reflect.Struct {
+			processStructInMapForEnvs(value.Interface(), prefix, newEnv, configField, kvEnvVar)
+		} else {
+			processSimpleValueInMap(mapEnv, value.Interface(), prefix, newEnv, configField, kvEnvVar)
+		}
+	}
+
+	newEnv.Value = kvEnvVar
+	newEnv.ConfigField = ""
+	newEnv.isStruct = true
+
+	*envs = append(*envs, newEnv)
+}
+
+func processStructInMapForEnvs(value interface{},
+	prefix string,
+	newEnv *EnvVar,
+	configField string,
+	kvEnvVar map[string]*EnvVar,
+) {
+	envsInner := parseEnvs(value, prefix+newEnv.key+"_", configField+newEnv.ConfigField)
+	for i := range envsInner {
+		kvEnvVar[envsInner[i].field] = envsInner[i]
+	}
+}
+
+func handleSimpleField(newEnv *EnvVar, field *structs.Field, prefix, configField string, envs *[]*EnvVar) {
+	newEnv.setValue(field)
+	newEnv.Env = prefix + newEnv.key
+	newEnv.ConfigField = configField + newEnv.ConfigField
+	newEnv.Obfuscated = getPointerBool(false)
+
+	if field.Tag(StructViewerTag) == "obfuscate" {
+		newEnv.Obfuscated = getPointerBool(true)
+	}
+
+	*envs = append(*envs, newEnv)
+}
+
+func makeKVEnvVar(envsInner []*EnvVar) map[string]*EnvVar {
+	kvEnvVar := make(map[string]*EnvVar)
+	for i := range envsInner {
+		kvEnvVar[envsInner[i].field] = envsInner[i]
+	}
+
+	return kvEnvVar
+}
+
+func processStructInMap(mapValue reflect.Value) (reflect.Value, error) {
+	ptrToStruct := reflect.New(mapValue.Type())
+	ptrToStruct.Elem().Set(mapValue)
+
+	newStruct, err := obfuscateTags(ptrToStruct.Interface())
+	if err != nil {
+		return reflect.Value{}, err
+	}
+
+	return reflect.ValueOf(newStruct).Elem(), nil
+}
+
+func processSimpleValueInMap(mapEnv *EnvVar,
+	value interface{},
+	prefix string,
+	newEnv *EnvVar,
+	configField string,
+	kvEnvVar map[string]*EnvVar,
+) {
+	mapEnv.Value = value
+	envSuffix := strings.ToUpper(strings.ReplaceAll(mapEnv.key, "_", ""))
+	mapEnv.Env = prefix + newEnv.key + "_" + envSuffix
+	mapEnv.ConfigField = configField + newEnv.ConfigField + "." + mapEnv.key
+	mapEnv.Obfuscated = getPointerBool(false)
+
+	kvEnvVar[mapEnv.key] = mapEnv
+}
+
 func obfuscateTags(config interface{}) (interface{}, error) {
 	val := reflect.ValueOf(config)
 	if val.Kind() == reflect.Ptr {
@@ -315,76 +369,110 @@ func obfuscateTags(config interface{}) (interface{}, error) {
 		}
 
 		svTag := field.Tag.Get(StructViewerTag)
-		if fieldValue.Kind() == reflect.Struct {
-			if strings.EqualFold(svTag, "obfuscate") {
-				zeroValue := reflect.Zero(fieldValue.Type())
-				fieldValue.Set(zeroValue)
-			} else {
-				newStruct, err := obfuscateTags(fieldValue.Addr().Interface())
-				if err != nil {
-					return nil, err
-				}
 
-				fieldValue.Set(reflect.ValueOf(newStruct).Elem())
-			}
-		} else if fieldValue.Kind() == reflect.Map {
-			if strings.EqualFold(svTag, "obfuscate") {
-				zeroValue := reflect.Zero(fieldValue.Type())
-				fieldValue.Set(zeroValue)
-			} else {
-				newMap := reflect.MakeMap(fieldValue.Type())
-				keys := fieldValue.MapKeys()
-
-				for _, key := range keys {
-					mapValue := fieldValue.MapIndex(key)
-					if !mapValue.IsValid() {
-						continue
-					}
-
-					var newValue reflect.Value
-
-					switch mapValue.Kind() {
-					case reflect.Ptr, reflect.Interface:
-						elemValue := mapValue.Elem()
-						if elemValue.Kind() == reflect.Struct {
-							newStruct, err := obfuscateTags(elemValue.Addr().Interface())
-							if err != nil {
-								return nil, err
-							}
-							newValue = reflect.ValueOf(newStruct).Elem()
-						} else {
-							newValue = mapValue
-						}
-					case reflect.Struct:
-						ptrToStruct := reflect.New(mapValue.Type())
-						ptrToStruct.Elem().Set(mapValue)
-						newStruct, err := obfuscateTags(ptrToStruct.Interface())
-						if err != nil {
-							return nil, err
-						}
-						newValue = reflect.ValueOf(newStruct).Elem()
-					default:
-						newValue = mapValue
-					}
-
-					newMap.SetMapIndex(key, newValue)
-				}
-
-				fieldValue.Set(newMap)
-			}
-		} else {
-			if strings.EqualFold(svTag, "obfuscate") {
-				if fieldValue.Kind() == reflect.String {
-					fieldValue.SetString("*REDACTED*")
-				} else {
-					zeroValue := reflect.Zero(fieldValue.Type())
-					fieldValue.Set(zeroValue)
-				}
-			}
+		if err := processField(fieldValue, svTag); err != nil {
+			return nil, err
 		}
 	}
 
 	return config, nil
+}
+
+func processField(fieldValue reflect.Value, svTag string) error {
+	switch fieldValue.Kind() {
+	case reflect.Struct:
+		return processStructField(fieldValue, svTag)
+	case reflect.Map:
+		return processMapField(fieldValue, svTag)
+	default:
+		processSimpleField(fieldValue, svTag)
+	}
+
+	return nil
+}
+
+func processStructField(fieldValue reflect.Value, svTag string) error {
+	if strings.EqualFold(svTag, "obfuscate") {
+		zeroValue := reflect.Zero(fieldValue.Type())
+		fieldValue.Set(zeroValue)
+
+		return nil
+	}
+
+	newStruct, err := obfuscateTags(fieldValue.Addr().Interface())
+	if err != nil {
+		return err
+	}
+
+	fieldValue.Set(reflect.ValueOf(newStruct).Elem())
+
+	return nil
+}
+
+func processMapField(fieldValue reflect.Value, svTag string) error {
+	if strings.EqualFold(svTag, "obfuscate") {
+		zeroValue := reflect.Zero(fieldValue.Type())
+		fieldValue.Set(zeroValue)
+
+		return nil
+	}
+
+	newMap := reflect.MakeMap(fieldValue.Type())
+	keys := fieldValue.MapKeys()
+
+	for _, key := range keys {
+		mapValue := fieldValue.MapIndex(key)
+		if !mapValue.IsValid() {
+			continue
+		}
+
+		newValue, err := processMapValue(mapValue)
+		if err != nil {
+			return err
+		}
+
+		newMap.SetMapIndex(key, newValue)
+	}
+
+	fieldValue.Set(newMap)
+
+	return nil
+}
+
+func processMapValue(mapValue reflect.Value) (reflect.Value, error) {
+	switch mapValue.Kind() {
+	case reflect.Ptr, reflect.Interface:
+		return processPointerOrInterface(mapValue)
+	case reflect.Struct:
+		return processStructInMap(mapValue)
+	default:
+		return mapValue, nil
+	}
+}
+
+func processPointerOrInterface(mapValue reflect.Value) (reflect.Value, error) {
+	elemValue := mapValue.Elem()
+	if elemValue.Kind() == reflect.Struct {
+		newStruct, err := obfuscateTags(elemValue.Addr().Interface())
+		if err != nil {
+			return reflect.Value{}, err
+		}
+
+		return reflect.ValueOf(newStruct).Elem(), nil
+	}
+
+	return mapValue, nil
+}
+
+func processSimpleField(fieldValue reflect.Value, svTag string) {
+	if strings.EqualFold(svTag, "obfuscate") {
+		if fieldValue.Kind() == reflect.String {
+			fieldValue.SetString("*REDACTED*")
+		} else {
+			zeroValue := reflect.Zero(fieldValue.Type())
+			fieldValue.Set(zeroValue)
+		}
+	}
 }
 
 // EnvVar is a key:value string struct for environment variables representation
