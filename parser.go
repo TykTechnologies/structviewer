@@ -467,10 +467,14 @@ func processPointerOrInterface(mapValue reflect.Value) (reflect.Value, error) {
 func processSimpleField(fieldValue reflect.Value, svTag string) {
 	if strings.EqualFold(svTag, "obfuscate") {
 		if fieldValue.Kind() == reflect.String {
-			fieldValue.SetString("*REDACTED*")
+			if fieldValue.String() != "" {
+				fieldValue.SetString("*REDACTED*")
+			}
 		} else {
 			zeroValue := reflect.Zero(fieldValue.Type())
-			fieldValue.Set(zeroValue)
+			if !reflect.DeepEqual(fieldValue.Interface(), zeroValue.Interface()) {
+				fieldValue.Set(zeroValue)
+			}
 		}
 	}
 }
