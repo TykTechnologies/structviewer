@@ -1,6 +1,6 @@
 # struct_viewer
 
-The struct_viewer package is a Go library that provides functionality for managing application configurations using Go struct types and environment variables. It allows you to define your configuration as a struct and easily populate it with values from environment variables
+The struct_viewer package is a Go library designed to simplify the management and visualization of application configurations using Go structs and environment variables. It allows you to define your configuration as a struct, populate it with values from environment variables, and expose both the configuration and its corresponding environment variables via HTTP endpoints for easy inspection and debugging.
 
 ## Installation
 
