@@ -96,7 +96,7 @@ By incorporating these elements, your README will be more accessible and informa
 
 ## Limitations
 
-- Only exported fields in go struct are parsed
+- Only exported fields in Go struct are parsed
 - Only struct fields can have comments in them
 - Single file parsing
 - No obfuscation
