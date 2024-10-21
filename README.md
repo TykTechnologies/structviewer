@@ -88,7 +88,7 @@ The library provides several error types:
 `ErrNilConfig`: Returned when a nil configuration struct is provided.
 `ErrEmptyStruct`: Returned when an empty struct is provided.
 `ErrInvalidObjectType`: Returned when the object is not of struct type.
-Contributing
+## Contributing
 We welcome contributions! Please see our contribution guidelines for details.
 
 By incorporating these elements, your README will be more accessible and informative for users and contributors alike.
