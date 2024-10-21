@@ -11,7 +11,7 @@ The struct_viewer package is a Go library designed to simplify the management an
 
 ## Installation
 
-To install the *struct_viewer* package, use the go get command:
+To install the *struct_viewer* package, use the `go get` command:
 
 ```bash
 go get -u github.com/TykTechnologies/struct-viewer
