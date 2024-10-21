@@ -91,7 +91,6 @@ The library provides several error types:
 ## Contributing
 We welcome contributions! Please see our contribution guidelines for details.
 
-By incorporating these elements, your README will be more accessible and informative for users and contributors alike.
 
 
 ## Limitations
