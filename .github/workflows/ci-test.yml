@@ -43,7 +43,7 @@ jobs:
       - name: Run tests
         run: task run-tests
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: structviewer
           retention-days: 1
@@ -75,7 +75,7 @@ jobs:
         if: ${{ contains(fromJSON('["push","pull_request"]'), github.event_name) }}
         run: |
           $(go env GOPATH)/bin/golangci-lint run --out-format checkstyle --timeout=300s --max-issues-per-linter=0 --max-same-issues=0 --issues-exit-code=0 --new-from-rev=origin/${{ github.base_ref }} ./... > golanglint.xml
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: golangcilint
           retention-days: 1
@@ -96,11 +96,11 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
       - name: Download coverage artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: structviewer
       - name: Download golangcilint artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: golangcilint
       - name: Check reports existence
