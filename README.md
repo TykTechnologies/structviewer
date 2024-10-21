@@ -63,7 +63,6 @@ func main() {
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
-	log.Println("Running server on port :8080")
 }
 ```
 
