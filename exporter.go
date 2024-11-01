@@ -45,8 +45,6 @@ func (v *Viewer) ConfigHandler(rw http.ResponseWriter, r *http.Request) {
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	rw.WriteHeader(http.StatusOK)
 }
 
 // DetailedConfigHandler exposes the detailed configuration struct as JSON fields
