@@ -74,6 +74,7 @@ func TestConfigHandler(t *testing.T) {
 		expectedJSONOutput string
 
 		shouldDeleteConfig bool
+		queryParamVal      string
 	}{
 		{
 			testName: "simple struct",
@@ -98,6 +99,15 @@ func TestConfigHandler(t *testing.T) {
 			expectedJSONOutput: "",
 			shouldDeleteConfig: true,
 		},
+		{
+			testName:           "invalid field",
+			givenConfig:        complexStruct,
+			expectedStatusCode: http.StatusNotFound,
+			expectedJSONOutput: toJSON(t, map[string]string{
+				"error": "field not found",
+			}),
+			queryParamVal: "invalid_field",
+		},
 	}
 
 	for _, tc := range tcs {
@@ -106,6 +116,8 @@ func TestConfigHandler(t *testing.T) {
 			// pass 'nil' as the third parameter.
 			req, err := http.NewRequest("GET", "/", nil)
 			assert.NoError(t, err)
+
+			setQueryParams(req, JSONQueryKey, tc.queryParamVal)
 
 			structViewerConfig := Config{Object: tc.givenConfig}
 			helper, err := New(&structViewerConfig, "TYK_")
@@ -196,8 +208,10 @@ func TestDetailedConfigHandler(t *testing.T) {
 			testName:           "invalid field complexStruct via query param",
 			givenConfig:        complexStruct,
 			queryParamVal:      "data.object_3",
-			expectedStatusCode: http.StatusOK,
-			expectedJSONOutput: toJSON(t, EnvVar{}),
+			expectedStatusCode: http.StatusNotFound,
+			expectedJSONOutput: toJSON(t, map[string]string{
+				"error": "field not found",
+			}),
 		},
 		{
 			testName: "not initialized",
@@ -321,8 +335,10 @@ func TestEnvsHandler(t *testing.T) {
 			givenConfig:        complexStruct,
 			givenPrefix:        "TYK_",
 			queryParamVal:      "TYK_DATA_OBJECT3",
-			expectedStatusCode: http.StatusOK,
-			expectedJSONOutput: toJSON(t, EnvVar{}),
+			expectedStatusCode: http.StatusNotFound,
+			expectedJSONOutput: toJSON(t, map[string]string{
+				"error": "environment variable not found",
+			}),
 		},
 	}
 
