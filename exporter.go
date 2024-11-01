@@ -25,9 +25,14 @@ func (v *Viewer) ConfigHandler(rw http.ResponseWriter, r *http.Request) {
 		response := v.EnvNotation(configField)
 		if response.Value == nil {
 			rw.WriteHeader(http.StatusNotFound)
-			_ = json.NewEncoder(rw).Encode(map[string]string{
+
+			err := json.NewEncoder(rw).Encode(map[string]string{
 				"error": "field not found",
 			})
+			if err != nil {
+				return
+			}
+
 			return
 		}
 
@@ -60,12 +65,14 @@ func (v *Viewer) DetailedConfigHandler(rw http.ResponseWriter, r *http.Request) 
 		response := v.EnvNotation(configField)
 		if response.Value == nil {
 			rw.WriteHeader(http.StatusNotFound)
+
 			err := json.NewEncoder(rw).Encode(map[string]string{
 				"error": "field not found",
 			})
 			if err != nil {
 				return
 			}
+
 			return
 		}
 
@@ -97,12 +104,14 @@ func (v *Viewer) EnvsHandler(rw http.ResponseWriter, r *http.Request) {
 		response := v.JSONNotation(env)
 		if response.Value == nil {
 			rw.WriteHeader(http.StatusNotFound)
+
 			err := json.NewEncoder(rw).Encode(map[string]string{
 				"error": "environment variable not found",
 			})
 			if err != nil {
 				return
 			}
+
 			return
 		}
 
