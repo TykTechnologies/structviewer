@@ -20,13 +20,33 @@ func (v *Viewer) ConfigHandler(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	rw.Header().Set("Content-type", "application/json")
-	rw.WriteHeader(http.StatusOK)
+
+	if configField := r.URL.Query().Get(JSONQueryKey); configField != "" {
+		response := v.EnvNotation(configField)
+		if response.Value == nil {
+			rw.WriteHeader(http.StatusNotFound)
+			_ = json.NewEncoder(rw).Encode(map[string]string{
+				"error": "field not found",
+			})
+			return
+		}
+
+		err := json.NewEncoder(rw).Encode(response)
+		if err != nil {
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		return
+	}
 
 	err := json.NewEncoder(rw).Encode(v.config)
 	if err != nil {
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	rw.WriteHeader(http.StatusOK)
 }
 
 // DetailedConfigHandler exposes the detailed configuration struct as JSON fields
@@ -37,15 +57,25 @@ func (v *Viewer) DetailedConfigHandler(rw http.ResponseWriter, r *http.Request) 
 	}
 
 	rw.Header().Set("Content-type", "application/json")
-	rw.WriteHeader(http.StatusOK)
 
 	if configField := r.URL.Query().Get(JSONQueryKey); configField != "" {
-		err := json.NewEncoder(rw).Encode(v.EnvNotation(configField))
+		response := v.EnvNotation(configField)
+		if response.Value == nil {
+			rw.WriteHeader(http.StatusNotFound)
+			err := json.NewEncoder(rw).Encode(map[string]string{
+				"error": "field not found",
+			})
+			if err != nil {
+				return
+			}
+			return
+		}
+
+		err := json.NewEncoder(rw).Encode(response)
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-
 		return
 	}
 
@@ -64,15 +94,25 @@ func (v *Viewer) EnvsHandler(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	rw.Header().Set("Content-type", "application/json")
-	rw.WriteHeader(http.StatusOK)
 
 	if env := r.URL.Query().Get(EnvQueryKey); env != "" {
-		err := json.NewEncoder(rw).Encode(v.JSONNotation(env))
+		response := v.JSONNotation(env)
+		if response.Value == nil {
+			rw.WriteHeader(http.StatusNotFound)
+			err := json.NewEncoder(rw).Encode(map[string]string{
+				"error": "environment variable not found",
+			})
+			if err != nil {
+				return
+			}
+			return
+		}
+
+		err := json.NewEncoder(rw).Encode(response)
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-
 		return
 	}
 
